@@ -1,0 +1,455 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0b0c10 0%, #1a1d23 100%);
+    color: #e8eaf0;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Header */
+.header {
+    background: rgba(18, 20, 26, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #2a2f3a;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+}
+
+.header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #4f9cff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.league-info {
+    background: rgba(79, 156, 255, 0.1);
+    border: 1px solid rgba(79, 156, 255, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.btn-primary {
+    background: #4f9cff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #3d8bff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 156, 255, 0.3);
+}
+
+/* Loading */
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 0;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(79, 156, 255, 0.3);
+    border-top: 3px solid #4f9cff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error message */
+.error-message {
+    background: rgba(255, 86, 86, 0.1);
+    border: 1px solid rgba(255, 86, 86, 0.3);
+    color: #ff5656;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Controls bar */
+.controls-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    background: rgba(23, 26, 34, 0.6);
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    border: 1px solid #2a2f3a;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    min-width: 250px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    background: #0f131a;
+    border: 1px solid #2a2f3a;
+    border-radius: 6px;
+    color: #e8eaf0;
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #4f9cff;
+    box-shadow: 0 0 0 3px rgba(79, 156, 255, 0.1);
+}
+
+.search-box i {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid #2a2f3a;
+    color: #e8eaf0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+    background: #4f9cff;
+    border-color: #4f9cff;
+    color: white;
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.sort-controls select {
+    padding: 0.5rem;
+    background: #0f131a;
+    border: 1px solid #2a2f3a;
+    border-radius: 6px;
+    color: #e8eaf0;
+    cursor: pointer;
+}
+
+/* Rosters grid */
+.rosters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+}
+
+/* Roster card */
+.roster-card {
+    background: rgba(23, 26, 34, 0.8);
+    border: 1px solid #2a2f3a;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.roster-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.roster-header {
+    background: linear-gradient(135deg, #4f9cff 0%, #3d8bff 100%);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+}
+
+.roster-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.roster-stats {
+    display: flex;
+    justify-content: space-around;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* Position sections */
+.position-section {
+    margin-bottom: 1.5rem;
+}
+
+.position-header {
+    background: rgba(42, 47, 58, 0.5);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #2a2f3a;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #4f9cff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.position-count {
+    background: rgba(79, 156, 255, 0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+}
+
+/* Player row */
+.player-row {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(42, 47, 58, 0.3);
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 0.75rem;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.player-row:last-child {
+    border-bottom: none;
+}
+
+.player-row:hover {
+    background: rgba(79, 156, 255, 0.05);
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.player-name {
+    font-weight: 500;
+    color: #e8eaf0;
+    margin-bottom: 0.2rem;
+}
+
+.player-details {
+    font-size: 0.8rem;
+    color: #999;
+}
+
+.position-badge {
+    background: rgba(79, 156, 255, 0.2);
+    color: #4f9cff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    width: fit-content;
+}
+
+.team-badge {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e8eaf0;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    width: fit-content;
+}
+
+.player-value {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-align: right;
+    color: #4ade80;
+}
+
+.player-value.high {
+    color: #4ade80;
+}
+
+.player-value.medium {
+    color: #fbbf24;
+}
+
+.player-value.low {
+    color: #f87171;
+}
+
+/* Main content */
+.main {
+    flex: 1;
+    padding: 2rem 0;
+}
+
+/* Footer */
+.footer {
+    background: rgba(18, 20, 26, 0.8);
+    border-top: 1px solid #2a2f3a;
+    padding: 1rem 0;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.footer a {
+    color: #4f9cff;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .controls {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .controls-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-buttons {
+        justify-content: center;
+    }
+
+    .rosters-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .player-row {
+        grid-template-columns: 2fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .position-badge,
+    .team-badge {
+        margin-top: 0.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 0.5rem;
+    }
+
+    .player-row {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+
+    .player-value {
+        text-align: left;
+    }
+}
+
+/* Animation for roster loading */
+.roster-card {
+    opacity: 0;
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.roster-card:nth-child(1) { animation-delay: 0.1s; }
+.roster-card:nth-child(2) { animation-delay: 0.2s; }
+.roster-card:nth-child(3) { animation-delay: 0.3s; }
+.roster-card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

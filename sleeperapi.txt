@@ -1,0 +1,685 @@
+8/17/25, 11 :52AM get-all-picks-in-a-draft - Sleeper API
+• Introduction
+• User
+• Avatars
+• Leagues
+• Drafts
+• Get all drafts for user
+• Get all drafts for a league
+• Get a sgecific draft
+• Get all gicks in a draft
+• Get traded gicks in a draft
+• PlaY.ers
+• Fetch all P-.@Y.ers
+• Trending Players
+Introduction
+The Sleeper API is a read-only HTTP API that is free to use and allows access to a user's leagues, drafts, and rosters.
+No API Token is necessary, as you cannot modify contents via this API.
+Be mindful of the frequency of calls. A general rule is to stay under 1000 API calls per minute, otherwise, you risk being IP-blocked.
+To fetch a user object, use this code:
+# With shell, you can just curl the username or user _id
+curl "https: / /api. sleeper . app/vl/user/ <username>"
+curl "https: / /api. sleeper . app/vl/user/<user _id>"
+User
+You will get a JSON response that looks something like this:
+"username" : "sleeperuser" ,
+"user _id" : "12345678" ,
+"display_name" : "SleeperUser" ,
+https://docs.sleeper.com 1/17
+8/17/25, 11 :52AM get-all-picks-in-a-draft - Sleeper API
+"avatar" : "cc12ec49965eb7856f84d71cf85306af"
+We do not perform authentication as our API is read-only and only contains league information.
+Via the (user) resource, you can GET the user object by either providing the (username) or (user id) of the user.
+(GET https : //api.sleeper.app/vl/user/<username>)
+(GET https : //api.sleeper.app/vl/user/<user_id>)
+O Keep in mind that the (username) of a user can change over time, so if you are storing information, you'll want to hold onto the
+user_id.
+Avatars
+Users and leagues have avatar images. There are thumbnail and full-size images for each avatar.
+Full size URL
+(https : //sleepercdn.com/avatars/<avatar_id>)
+Thumbnail URL
+https://sleepercdn.com/avatars/thumbs/<avatar id>
+Leagues
+Get all leagues for user
+curl "https: / /api. sleeper.app/vl/user/<user _id>/leagues/nfl/2018"
+The above command returns JSON structured like this:
+"total_rosters" : 12,
+"status" : "pre_draft", // can also be "drafting", "in_season", or "complete"
+"sport" : "nfl" ,
+"settings" : { settings object },
+"season_type" : "regular" ,
+"season" : "2018" ,
+"scoring_settings" : { scoring_settings object },
+"roster _positions" : [ roster positions array ] ,
+"previous_league_id" : "198946952535085056" ,
+"name" : "Sleeperbot Friends League" ,
+"league_id" : "289646328504385536" ,
+"draft_id" : "289646328508579840" ,
+https://docs.sleeper.com
+----..
+2/17
+8/17/25, 11 :52AM
+},
+},
+"avatar" : "efaefa889ae24046a53265a3c71b8b64"
+"total_rosters" : 12,
+"status" : "in_season",
+"sport" : "nfl" ,
+"settings" : { settings object },
+"season_type" : "regular" ,
+"season" : "2018",
+"scoring_settings" : { scoring_settings object },
+"roster _positions" : [ roster positions array ] ,
+"previous_league_id" : "198946952535085056" ,
+"name" : "Sleeperbot Dynasty" ,
+"league_id" : "289646328504385536" ,
+"draft_id" : "289646328508579840" ,
+"avatar" : "efaefa889ae24046a53265a3c71b8b64"
+This endpoint retrieves all leagues.
+HTTP REQUEST
+get-all-picks-in-a-draft - Sleeper API
+GET https : //api.sleeper.app/vl/user/<user_id>/leagues/<sport>/<season>
+URL PARAMETERS
+Parameter Description
+user_id The numerical ID of the user.
+sport We only support "nfl" right now.
+season Season can be 2017, 2018, etc. ..
+Get a specific league
+curl "https: / /api. sleeper .app/vl/league/<league_id>"
+The above command returns JSON structured like this:
+"total_rosters" : 12,
+"status" : "in_season" ,
+"sport" : "nfl" ,
+"settings" : { settings object } ,
+"season_type" : "regular" ,
+"season" : "2018" ,
+"scoring_settings" : { scoring_settings object } ,
+"roster_positions" : [ roster positions array ],
+"previous_league_id" : "198946952535085056"" ,
+"name" : "Sleeperbot Dynasty" ,
+"league_id" : "289646328504385536" ,
+"draft_id" : "289646328508579840"' ,
+••avatar" : •• efaefa889ae24046a53265a3c71b8b64 ••
+https://docs.sleeper.com 3/17
+8/17/25, 11 :52AM get-all-picks-in-a-draft - Sleeper API
+This endpoint retrieves a specific league.
+HTTP REQUEST
+(GET https : //api.sleeper.app/vl/league/<league id>)
+URL PARAMETERS
+Parameter Description
+league_id The ID of the league to retrieve
+Getting rosters in a league
+curl "https : / /api . sleeper . app/vl/league/<league_id>/rosters"
+The above command returns JSON structured like this:
+[
+{
+"starters" : [ "2307" , "2257" , "4034" , "147" , "642" , "4039" , "515" , "4149" , "DET" ],
+•·settings" :
+},
+},
+"wins" : s,
+"waiver position" : 7,
+"waiver budget_used" : 0,
+"total_moves" : 0,
+"ties" : 0 ,
+"losses" : 9,
+"fpts_decimal"' : 78,
+"fpts_against_decimal" : 32,
+"fpts_against" : 1670,
+"fpts" : 1617
+"roster _id" : 1,
+"reserve" : [],
+"players" : [ "1046" , "138" , "147" , "2257" , "2307" , "2319" , "4034" , "4039" , "4040", "4149", "421" , "515", "642", "745" , "DET"],
+"owner _id" : "188815879448829952" ,
+"league_id" : "206827432160788480"
+This endpoint retrieves all rosters in a league.
+HTTP REQUEST
+(GET https : //api.sleeper.app/vl/league/<league id>/rosters)
+URL PARAMETERS
+Parameter Description
+league_id The ID of the league to retrieve rosters from
+https://docs.sleeper.com 4/17
+8/17/25, 11 :52AM
+Getting users in a league
+curl "https: / /api. sleeper . app/vl/league/<league_id>/users"
+},
+The above command returns JSON structured like this:
+"user id" : "<user id>" ,
+"username" : "<username>" ,
+"display_name" : "<display_name>" ,
+"avatar" : "1233456789" ,
+"metadata" : {
+"team_name" : "Dezpacito"
+},
+"is_owner" : true / / is commissioner (there can be multiple commissioners)
+This endpoint retrieves all users in a league.
+get-all-picks-in-a-draft - Sleeper API
+This also includes each user's display_name, avatar, and their metadata which sometimes includes a nickname they gave their team.
+HTTP REQUEST
+(GET https : //api.sleeper.app/vl/league/<league_id>/users)
+URL PARAMETERS
+Parameter Description
+league_id The ID of the league to retrieve rosters from
+Getting matchups in a league
+curl "https: / / api. sleeper. app/vl/league/ <league_id> /matchups/ <week>"
+},
+The above command returns JSON structured like this:
+"starters" : [ "421" , "4035" , "3242" , "2133" , "2449" , "4531" , "2257" , "788" , "PHI" ],
+"roster _id" : 1,
+"players" : [ "1352" , "1387'' , "2118" , "2133" , "2182" , "223" , "2319" , "2449" , "3208" , "4035" , "421" , "4881" , "4892" , "788" , "CLE" ],
+"matchup_id" : 2,
+"points" : 20.0 // total points for team based on league settings
+"custom_points" : null // if commissioner overrides points manually
+https://docs.sleeper.com 5/17
+8/17/25, 11 :52AM get-all-picks-in-a-draft - Sleeper API
+This endpoint retrieves all matchups in a league for a given week. Each object in the list represents one team. The two teams with the same
+(matchup id) match up against each other.
+The (starters) is in an ordered list of player_ids, and (players) is a list of all player_ids in this matchup.
+The bench can be deduced by removing the (starters) from the (players) field.
+HTTP REQUEST
+(GET https : //api.sleeper.app/vl/league/<league id>/matchups/<week>)
+URL PARAMETERS
+Parameter Description
+league_id The ID of the league to retrieve matchups from
+week The week these matchups take place
+Getting the playoff bracket
+curl '"https : / /api . sleeper . app/vl/league/ <league_id>/winners_bracket··
+curl ""https: / /api. sleeper . app/vl/league/ <league_id>/losers_bracket··
+The above command returns JSON structured like this:
+{ r : 1, m: 1, tl : 3, t2 : 6,
+{ r : 1, m: 2, tl : 4, t2 : S,
+{r : 2, m: 3, tl : 1 , t2 : null,
+{r : 2, m: 4, tl : 2, t2 : null,
+{r : 2, m: 5, tl : null , t2 : null ,
+{r : 3, m: 6, tl : null , t2 : null,
+{r : 3, m: 7, tl : null , t2 : null,
+w: null , 1: null},
+w: null , 1: null},
+t2_from : {w: 1},
+t2_from : {w: 2},
+tl_from : (1 : 1},
+tl_from : {w: 3},
+tl_from : {l : 3},
+w: null ,
+w: null ,
+t2_from :
+t2_from :
+t2_from :
+1: null},
+1: null},
+{l : 2}' w:
+{w: 4}, w:
+{l : 4}, w:
+null ,
+null ,
+null ,
+1 : null, p:
+1 : null , p:
+1 : null, p:
+5},
+l },
+3}
+This endpoint retrieves the playoff bracket for a league for 4, 6, and 8 team playoffs.
+Each row represents a matchup between 2 teams.
+Field Type Description
+r int The round for this matchup, 1st, 2nd, 3rd round, etc.
+m int The match@ of the matchup, unique for all match ups within a bracket.
+t1 int The (roster_id) of a team in this matchup OR ({w : 1}) which means the winner of match id G)
+t2 int The (roster id) of the other team in this matchup OR ({1: 1}) which means the loser of match id G)
+w int The (roster_id) of the winning team, if the match has been played.
+https://docs.sleeper.com 6/17
+8/17/25, 11 :52AM get-all-picks-in-a-draft - Sleeper API
+Field Type Description
+I int The (roster_id) ofthe losing team, if the match has been played.
+t1_from object Where t1 comes from, either winner or loser of the match @, necessary to show bracket progression.
+t2_from object Where t2 comes from, either winner or loser of the match @, necessary to show bracket progression.
+HTTP REQUEST
+GET https://api.sleeper.app/vl/league/<league id>/winners bracket
+(GET https ://api.sleeper.app/vl/league/<league_id>/loses_bracket)
+URL PARAMETERS
+Parameter Description
+league_id The ID of the league to retrieve matchups from
+Get transactions
+curl "https: / / api. sleeper. app/vl/league/ <league_id>/transactions/ <round>"
+The above command returns JSON structured like this:
+"type" : "trade" ,
+'"transaction_id" : '"434852362033561600"' ,
+"status_updated" : 1558039402803,
+"status" : "complete" ,
+"settings" : null, // trades do not use this field
+"roster_ids" : [2, 1], // roster_ids involved in this transaction
+"metadata" : null ,
+"leg"' : 1,
+"drops" : null ,
+"draft_picks" :
+// in football, this is the week
+I I picks that were traded
+},
+],
+"season" : "2019" , // the season this draft pick belongs to
+"round" : s , // which round this draft pick is
+"roster _id" : 1, // original owner's roster _id
+"previous_owner id" : 1, // previous owner's roster id (in this trade)
+"owner id" : 2, // the new owner of this pick after the trade
+"season" : "2019" ,
+"round" : 3,
+"roster _id" : 2,
+"previous_owner id" : 2,
+"owner id" : 1,
+"creator" : "160000000000000000" , // user id who initiated the transaction
+"created" : 1558039391576,
+"consenter_ids" : [2, 1], II roster_ids of the people who agreed to this transaction
+https://docs.sleeper.com 7/17
+8/17/25, 11 :52AM
+},
+"adds" : null
+"waiver _budget" :
+],
+"sender" : 2,
+"receiver" : 3,
+"amount" : 55
+/ / roster _id 2 sends 55 FAAB dollars to roster _id 3
+"type" : "free_agent" , // could be waiver or trade as well
+"transaction_id" : "434890120798142464" ,
+"status_updated" : 1558048393967,
+"status" : "complete" ,
+"settings" : null, II could be {'waiver_bid ' : 44} if it's FAAS waivers
+"roster_ids" : [ 1], // roster_ids involved in this transaction
+get-all-picks-in-a-draft - Sleeper API
+"metadata" : null, // can contain notes in waivers like why it didn't go through
+},
+"leg" : 1,
+"drops" : {
+"1736" : 1 I I player id 1736 dropped from roster _id 1
+},
+"draft_picks" : [],
+"creator" : "160000000000000000" ,
+"created" : 1558048393967,
+"consenter_ids" : [1], // the roster_ids who agreed to this transaction
+"adds" : {
+"2315" : 1 I I player id 2315 added to roster _id 1
+},
+"waiver _budget" : [] I I this used for trades only involving FAAS
+This endpoint retrieves all free agent transactions, waivers and trades.
+HTTP REQUEST
+(GET https : //api.sleeper . app/vl/league/<league_id>/transactions/<round>)
+URL PARAMETERS
+Parameter Description
+league_id The ID of the draft to retrieve picks for
+round The week you want to pull from
+Get traded picks
+cur 1 "https: I la pi. sleeper. applvllleaguel <league_id>ltraded_picks"
+The above command returns JSON structured like this:
+"season" : "2019",
+"round" : 5,
+https://docs.sleeper.com
+// which season the pick is for
+/ / which round the pick is
+8/17
+8/17/25, 11 :52 AM get-all-picks-in-a-draft - Sleeper API
+"roster _id" : 1, // roster _id of ORIGINAL owner
+"previous_owner id" : 1, // roster _id of the previous owner
+"owner id" : 2, // roster _id of current owner
+},
+"season" : "2020" , // which season the pick is for
+"round" : 3, I I which round the pick is
+"roster _id" : 2, / / roster _id of original owner
+"previous_owner id" : 2, / / roster _id of previous owner
+"owner id" : 1, // roster _id of current owner
+},
+This endpoint retrieves all traded picks in a league, including future picks.
+HTTP REQUEST
+(GET https : //api.sleeper . app/vl/league/<league_id>/traded_picks)
+URL PARAMETERS
+Parameter Description
+league_id The ID of the league to retrieve traded picks for
+Get NFL state
+curl 0'https: I lapi. sleeper.applvllstatelnfl"
+The above command returns JSON structured like this:
+"week" : 2, I I week
+"season_type" : "regular" , // pre, post, regular
+"season_start_date" : "2020-09-10" , / / regular season start
+"season" : "2020" , // current season
+"previous_season" : "2019" ,
+"leg" : 2, // week of regular season
+"league_season" : "2021", // active season for leagues
+"league_create_season" : "2021" , // flips in December
+"display_week'0
+: 3 I I Which week to display in UI, can be different than week
+This endpoint returns information about the current state for any sport.
+HTTP REQUEST
+(GET https : //api.sleeper.app/vl/state/<sport>)
+URL PARAMETERS
+Parameter Description
+sport nfl, nba, lcs, etc ...
+https://docs.sleeper.com 9/17
+8/17/25, 11 :52AM
+Get all drafts for user
+curl "https: / /api. sleeper . app/vl/user/<user _id>/drafts/nfl/2018"
+},
+The above command returns JSON structured like this:
+"type" : "snake" ,
+"status" : "complete" ,
+"start_time" : 1515700800000,
+"sport" : "nfl" ,
+··settings" : {
+},
+"teams" : 6 ,
+"slots_wr" : 2,
+"slots_te" : 1,
+"slots_rb" : 2,
+"slots_qb" : 1,
+"slots_k" : 1,
+"slots_flex" : 2,
+"slots_def" : 1,
+"slots_bn" : S,
+"rounds" : 15 ,
+"pick_timer" : 120
+"season_type" : "regular" ,
+"season" : "2017" ,
+"metadata" : {
+"scoring_type" : "ppr" ,
+"name" : "My Dynasty" ,
+"description" : ""
+},
+"league_id" : "257270637750382592" ,
+"last_picked" : 1515700871182,
+"last_message_time" : 1515700942674,
+"last_message_id" : "257272036450111488",
+"draft_order" : null ,
+"draft_id" : "257270643320426496" ,
+"creators" : null,
+"created" : 1515700610526
+This endpoint retrieves all drafts by a user.
+HTTP REQUEST
+get-all-picks-in-a-draft - Sleeper API
+Drafts
+(GET https : //api.sleeper.app/vl/user/<user_id>/drafts/<sport>/<season>)
+URL PARAMETERS
+Parameter Description
+user_id The numerical ID of the user.
+https://docs.sleeper.com 10/17
+8/17/25, 11 :52AM
+Parameter Description
+sport We only support "nfl" right now.
+season Season can be 2017, 2018, etc. ..
+Get all drafts for a league
+curl "'https: / /api. sleeper.app/vl/league/ <league_id>/drafts"
+},
+The above command returns JSON structured like this:
+"type" : "snake" ,
+"status" : "complete" ,
+"'start_time" : 1515700800000,
+"sport" : "nfl" ,
+.. settings .. : {
+},
+"teams" : 6 ,
+"slots_wr" : 2,
+"slots_te" : 1,
+"slots_rb" : 2,
+"slots_qb" : 1,
+"slots_k" : 1,
+"slots_flex" : 2,
+"slots_def" : 1,
+"slots_bn" : S,
+"rounds" : 15,
+"pick_timer" : 120
+"season_type" : "regular" ,
+"season" : "2017" ,
+"'metadata"' : {
+},
+"scoring_type" : "ppr" ,
+"name" : "My Dynasty" ,
+"description" : ""
+"'league_id"' : "'257270637750382592"' ,
+"'last_picked" : 1515700871182,
+"'last_message_time" : 1515700942674,
+"last_message_id" : "257272036450111488"' ,
+"draft_order" : null ,
+"draft_id" : "257270643320426496" ,
+"creators" : null ,
+"created" : 1515700610526
+get-all-picks-in-a-draft - Sleeper API
+This endpoint retrieves all drafts for a league. Keep in mind that a league can have multiple drafts, especially dynasty leagues.
+Drafts are sorted by most recent to earliest. Most leagues should only have one draft.
+HTTP REQUEST
+(GET https : //api.sleeper.app/vl/league/<league_id>/drafts)
+https://docs.sleeper.com 11/17
+8/17/25, 11 :52AM
+URL PARAMETERS
+Parameter
+get-all-picks-in-a-draft - Sleeper API
+Description
+league_id The ID of the league for which you are trying to retrieve drafts.
+Get a specific draft
+curl "https: / /api. sleeper . app/vl/draft/<draft_id>"
+The above command returns JSON structured like this:
+"type" : "snake" ,
+"status" : "complete" ,
+"start_time" : 1515700800000,
+"sport" : "nfl" ,
+"settings" : {
+},
+"teams" : 6 ,
+"slots_wr" : 2,
+"slots_te" : 1,
+"slots_rb" : 2,
+"slots_qb" : 1,
+"slots_k" : 1,
+"slots_flex" : 2,
+"slots_def" : 1,
+"slots_bn" : s ,
+"rounds" : 15,
+"pick_timer" : 120
+"season_type" : "regular" ,
+"season" : "2017" ,
+"metadata" : {
+},
+"scoring_type" : "ppr" ,
+"name" : "My Dynasty" ,
+"description" :
+"league_id" : "257270637750382592" ,
+"last_picked" : 1515700871182,
+"last_message_time" : 1515700942674,
+"last_message_id" : "257272036450111488" ,
+// this is the user _id to draft slot mapping
+"draft_order" :
+"12345678" : 1,
+"23434332" : 2,
+},
+// this is the draft slot to roster _id mapping
+I I leagues have rosters, which have roster ids
+// this means draft slot 1 (column 1) will go to roster 10, slot 2 will go to roster_id 3, etc
+"slot_to_roster _id" :
+},
+"1" : 10,
+"2" : 3,
+"3" :
+"draft_id" : "257270643320426496" ,
+https://docs.sleeper.com 12/17
+8/17/25, 11 :52AM
+"creators" : null ,
+"created" : 1515700610526
+This endpoint retrieves a specific draft.
+HTTP REQUEST
+(GET https : //api .sleeper .app/vl/draft/<draft_id>)
+URL PARAMETERS
+Parameter Description
+draft_id The ID of the draft to retrieve
+Get all picks in a draft
+cur 1 "https: / / api. sleeper. app/vl/ draft/ <draft_id> /picks"
+The above command returns JSON structured like this:
+"player _id" : "2391" ,
+get-all-picks-in-a-draft - Sleeper API
+"picked_by" : "234343434" , II user_id this pick will go to (not all leagues have users in every slot, this can be "")
+"roster _id" : "1" , // roster _id this pick will go to
+},
+"round" : 5,
+"draft_slot'" : 5, II which column this is on the draftboard
+"pick_no" : 1,
+"metadata" : {
+},
+"team" : "ARI" ,
+"status" : "Injured Reserve" ,
+"sport" : "nfl",
+"position" : "RB" ,
+"player _id" : "'2391"" ,
+"number" : "31",
+"news_updated"' : "'1513007102037"' ,
+"last_name" : "Johnson" ,
+"injury_status" : "Out" ,
+"first_name" : "David"
+"is_keeper" : null ,
+"'draft_id"' : "257270643320426496"'
+"player _id"' : "1408" ,
+"picked_by"' : "234343434"' , II user_id this pick will go to (not all leagues have users in every slot, this can be ""')
+"'roster _id"' : "'1"' , II roster _id this pick will go to
+"round" : 5,
+"draft_slot" : 6,
+"pick_no" : 2,
+"'metadata"' : {
+"team" : "PIT" ,
+"status" : "Active" ,
+"sport" : "nfl",
+"position" : "RB" ,
+"player _id" : "'1408" ,
+https://docs.sleeper.com 13/17
+8/17/25, 11 :52AM
+},
+},
+},
+"number" : "26",
+"news_updated" : "1515698101257" ,
+"last_name" : "Bell" ,
+"injury_status" : "" ,
+"first_name" : "le 'Veon"
+"is_keeper" : null ,
+"draft_id" : "257270643320426496"
+"player _id" : "536" ,
+"picked_by" : "667279356739584" ,
+"pick_no" : 3,
+"metadata" : {
+},
+"team" : "PIT" ,
+"status" : "Active" ,
+"sport" : "nfl",
+"position" : "WR" ,
+"player _id" : "536" ,
+"number" : "84",
+"news_updated" : "1515673801292" ,
+"last_name" : "Brown" ,
+"injury_status" : "Probable" ,
+"first_name" : "Antonio"
+"is_keeper" : null ,
+"draft_id" : "257270643320426496"
+This endpoint retrieves all picks in a draft.
+HTTP REQUEST
+(GET https ://api.sleeper.app/vl/draft/<draft id>/picks)
+URL PARAMETERS
+Parameter Description
+draft_id The ID of the draft to retrieve picks for
+Get traded picks in a draft
+curl "https : / /api. sleeper.app/vl/draft/ <draft_id>/traded_picks''
+The above command returns JSON structured like this:
+"season" : "2019" ,
+"round" : 5, // which round the pick is
+"roster _id" : 1, // roster _id of ORIGINAL owner
+"previous_owner id" : 1, // roster _id of the previous owner
+"owner id" : 2, // roster _id of current owner
+},
+https://docs.sleeper.com
+get-all-picks-in-a-draft - Sleeper API
+14/17
+8/17/25, 11 :52AM get-all-picks-in-a-draft - Sleeper API
+"season" : "2019",
+"round" : 3, I I which round the pick is
+"roster _id" : 2, // roster _id of original owner
+"previous_owner id" : 2, / / roster _id of previous owner
+"owner id" : 1, / / roster _id of current owner
+},
+This endpoint retrieves all traded picks in a draft.
+HTTP REQUEST
+(GET https : //api.sleeper.app/vl/draft/<draft id>/traded picks)
+URL PARAMETERS
+Parameter Description
+draft_id The ID of the draft to retrieve picks for
+Players
+Fetch all players
+To fetch all players, use this code:
+curl '"https : I lapi. sleeper .applvllplayerslnfl"
+You will get a JSON response that looks something like this:
+"3086" :
+"hashtag" : "#TomBrady-NFL-NE-12" ,
+"depth_chart_position" : 1,
+"status" : "Active" ,
+"sport" : "nfl" ,
+"fantasy_positions" : [ "QB" ],
+"number" : 12,
+"search_last_name" : "brady" ,
+"injury_start_date" : null ,
+"weight" : "220" ,
+"position" : "QB" ,
+"practice_participation" : null ,
+"sportradar _id" : "" ,
+"team" : "NE" ,
+"last_name" : "Brady" ,
+"college" : "Michigan" ,
+"fantasy_data_id" : 17836,
+"injury_status" :null,
+'"player _id'" : "3086" ,
+"height" : "6'4\"" ,
+"search_full_name" : "tombrady" ,
+"age" : 40,
+"stats_id" :
+"birth_country" : "United States" ,
+https://docs.sleeper.com 15/17
+8/17/25, 11 :52AM
+},
+"espn_id" : '"' ,
+"search_rank" : 24,
+"first_name" : "Tom" ,
+"depth_chart_order" : 1,
+"years_exp" : 14,
+"rotowire_id" : null ,
+"rotoworld_id" : 8356,
+"search_first_name" : "tom" ,
+"yahoo_id" : null
+get-all-picks-in-a-draft - Sleeper API
+O Please use this call sparingly, as it is intended only to be used once per day at most to keep your player IDs updated. The average
+size of this query is @
+Since rosters and draft picks contain (Player rns) which look like ("1042"), ( "2403"1 ("CAR"1 etc, you will need to know what those IDs map to.
+The (!players) call provides you the map necessary to look up any player.
+You should save this information on your own servers as this is not intended to be called every time you need to look up players due to
+the filesize being close to 5MB in size. You do not need to call this endpoint more than once per day.
+(GET https : //api.sleeper.app/vl/players/nfl)
+Trending Players
+To get a list of trending players based on add/drop activity:
+curl "https: / /api. sleeper.app/vl/players/nfl/trending/add"
+You will get a JSON response that looks something like this:
+"player _id" : "1111" , // the player _id
+"count" : 45 II number or adds
+},
+Want to embed this on your app? Copy the code below:
+<i frame src="https: //sleeper. app/embed/players/nfl/trending/ add ?lookback_hours=24&limi t=25" width=" 350" height="500" allowtransparency="true" frameborder="0" ></i frame>
+O Please give attribution to Sleeper you are using our trending data. If you'd like to embed our trending list on your website or blog,
+please use the embed code on the right.
+You can use this endpoint to get a list of trending players based on adds or drops in the past 24 hours.
+https://docs.sleeper.com 16/17
+8/17/25, 11 :52AM get-all-picks-in-a-draft - Sleeper API
+GET https : //api.sleeper.app/vl/players/<sport>/trending/<type>?lookback hours=<hours>&limit=<int>
+URL PARAMETERS
+Parameter Description
+sport The sport, such as 0
+type Either@ or (drop)
+lookback_hours Number of hours to look back (default is 24) - optional
+limit Number of results you want, (default is 25) - optional
+Errors
+The Sleeper API uses the following error codes:
+Code Meaning
+400 Bad Request -- Your request is invalid.
+404 Not Found -- The specified kitten could not be found.
+429 Too Many Requests -- You're requesting too many kittens! Slow down!
+500 Internal Server Error -- We had a problem with our server. Try again later.
+503 Service Unavailable -- We're temporarily offline for maintenance. Please try again later.
+https://docs.sleeper.com 17/17

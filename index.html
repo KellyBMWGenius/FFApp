@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Football Roster Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <h1><i class="fas fa-football-ball"></i> Fantasy Roster Analyzer</h1>
+                    <div class="controls">
+                        <button id="refreshBtn" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> Refresh Data
+                        </button>
+                        <div class="league-info">
+                            <span class="league-name" id="leagueName">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="container">
+                <div class="loading" id="loadingSpinner">
+                    <div class="spinner"></div>
+                    <p>Loading league data...</p>
+                </div>
+
+                <div class="error-message" id="errorMessage" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="errorText"></span>
+                </div>
+
+                <div class="rosters-container" id="rostersContainer" style="display: none;">
+                    <div class="controls-bar">
+                        <div class="search-box">
+                            <input type="text" id="searchPlayers" placeholder="Search players..." />
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="filter-buttons">
+                            <button class="filter-btn active" data-filter="all">All Teams</button>
+                            <button class="filter-btn" data-filter="starters">Starters Only</button>
+                            <button class="filter-btn" data-filter="bench">Bench Only</button>
+                        </div>
+                        <div class="sort-controls">
+                            <label for="sortBy">Sort by:</label>
+                            <select id="sortBy">
+                                <option value="value">Fantasy Value</option>
+                                <option value="name">Player Name</option>
+                                <option value="position">Position</option>
+                                <option value="team">NFL Team</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="rosters-grid" id="rostersGrid">
+                        <!-- Dynamic roster cards will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                <p>
+                    Data from <a href="https://sleeper.app" target="_blank">Sleeper</a> 
+                    and <a href="https://www.fantasycalc.com" target="_blank">FantasyCalc</a>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
