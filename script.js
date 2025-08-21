@@ -513,7 +513,6 @@ function createPositionSections(organized) {
                             <div class="player-name">Empty Slot</div>
                         </div>
                         <div class="position-badge">${positionDef.name}</div>
-                        <div class="team-badge">-</div>
                         <div class="player-value">0</div>
                     </div>`;
                 }
@@ -547,7 +546,6 @@ function createPlayerRow(player) {
                 <div class="player-details">${player.position} • ${player.team}</div>
             </div>
             <div class="position-badge">${player.position}</div>
-            <div class="team-badge">${player.team}</div>
             <div class="player-value ${getValueClass(player.value)}">${formatValue(player.value)}</div>
         </div>
     `;

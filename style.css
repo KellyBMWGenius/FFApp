@@ -301,8 +301,8 @@ body {
 /* Rosters grid */
 .rosters-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
 }
 
 /* Roster card */
@@ -335,8 +335,9 @@ body {
 .roster-stats {
     display: flex;
     justify-content: space-around;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     margin-top: 0.5rem;
+    gap: 0.5rem;
 }
 
 .stat {
@@ -385,13 +386,14 @@ body {
 
 /* Player row */
 .player-row {
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.75rem;
     border-bottom: 1px solid rgba(42, 47, 58, 0.3);
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: 0.75rem;
+    grid-template-columns: 2fr 0.8fr 1fr;
+    gap: 0.5rem;
     align-items: center;
     transition: background-color 0.2s ease;
+    font-size: 0.85rem;
 }
 
 .player-row:last-child {
@@ -485,6 +487,12 @@ body {
 }
 
 /* Responsive design */
+@media (max-width: 1200px) {
+    .rosters-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
     .header-content {
         flex-direction: column;
@@ -529,16 +537,16 @@ body {
     }
 
     .rosters-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     }
 
     .player-row {
         grid-template-columns: 2fr 1fr;
-        gap: 0.5rem;
+        gap: 0.4rem;
+        font-size: 0.8rem;
     }
 
-    .position-badge,
-    .team-badge {
+    .position-badge {
         margin-top: 0.2rem;
     }
 }
@@ -548,9 +556,15 @@ body {
         padding: 0 0.5rem;
     }
 
+    .rosters-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
     .player-row {
         grid-template-columns: 1fr;
         gap: 0.25rem;
+        padding: 0.4rem 0.5rem;
     }
 
     .player-value {
