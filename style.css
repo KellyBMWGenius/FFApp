@@ -136,6 +136,95 @@ body {
     border: 1px solid #2a2f3a;
 }
 
+/* Team selector */
+.team-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    min-width: 200px;
+}
+
+.custom-select {
+    position: relative;
+    background: #0f131a;
+    border: 1px solid #2a2f3a;
+    border-radius: 6px;
+    min-width: 180px;
+}
+
+.select-trigger {
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.2s ease;
+}
+
+.select-trigger:hover {
+    border-color: #4f9cff;
+}
+
+.select-trigger i {
+    transition: transform 0.2s ease;
+    color: #666;
+}
+
+.custom-select.active .select-trigger i {
+    transform: rotate(180deg);
+}
+
+.select-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #0f131a;
+    border: 1px solid #2a2f3a;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.custom-select.active .select-options {
+    display: block;
+}
+
+.select-option {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.select-option:hover {
+    background: rgba(79, 156, 255, 0.1);
+}
+
+.select-option input[type="checkbox"] {
+    margin: 0;
+    accent-color: #4f9cff;
+}
+
+.select-option label {
+    cursor: pointer;
+    font-size: 0.85rem;
+    flex: 1;
+}
+
+#teamSelectLabel {
+    color: #e8eaf0;
+    font-weight: 500;
+}
+
 .search-box {
     position: relative;
     flex: 1;
@@ -190,20 +279,23 @@ body {
     color: white;
 }
 
-.sort-controls {
+.sort-controls,
+.team-sort-controls {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     font-size: 0.9rem;
 }
 
-.sort-controls select {
+.sort-controls select,
+.team-sort-controls select {
     padding: 0.5rem;
     background: #0f131a;
     border: 1px solid #2a2f3a;
     border-radius: 6px;
     color: #e8eaf0;
     cursor: pointer;
+    min-width: 140px;
 }
 
 /* Rosters grid */
@@ -278,6 +370,17 @@ body {
     padding: 0.2rem 0.5rem;
     border-radius: 12px;
     font-size: 0.75rem;
+}
+
+.position-subheader {
+    background: rgba(42, 47, 58, 0.3);
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid rgba(42, 47, 58, 0.5);
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* Player row */
@@ -396,6 +499,29 @@ body {
     .controls-bar {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .team-selector {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .custom-select {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .sort-controls,
+    .team-sort-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .sort-controls select,
+    .team-sort-controls select {
+        min-width: unset;
+        flex: 1;
+        margin-left: 0.5rem;
     }
 
     .filter-buttons {

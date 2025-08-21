@@ -39,26 +39,52 @@
                 </div>
 
                 <div class="rosters-container" id="rostersContainer" style="display: none;">
-                    <div class="controls-bar">
-                        <div class="search-box">
-                            <input type="text" id="searchPlayers" placeholder="Search players..." />
-                            <i class="fas fa-search"></i>
-                        </div>
-                        <div class="filter-buttons">
-                            <button class="filter-btn active" data-filter="all">All Teams</button>
-                            <button class="filter-btn" data-filter="starters">Starters Only</button>
-                            <button class="filter-btn" data-filter="bench">Bench Only</button>
-                        </div>
-                        <div class="sort-controls">
-                            <label for="sortBy">Sort by:</label>
-                            <select id="sortBy">
-                                <option value="value">Fantasy Value</option>
-                                <option value="name">Player Name</option>
-                                <option value="position">Position</option>
-                                <option value="team">NFL Team</option>
-                            </select>
+                                    <div class="controls-bar">
+                    <div class="team-selector">
+                        <label for="teamSelect">Teams to Display:</label>
+                        <div class="custom-select">
+                            <div class="select-trigger" id="teamSelectTrigger">
+                                <span id="teamSelectLabel">All Teams</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="select-options" id="teamSelectOptions">
+                                <div class="select-option" data-value="all">
+                                    <input type="checkbox" id="selectAll" checked>
+                                    <label for="selectAll">All Teams</label>
+                                </div>
+                                <!-- Team options will be populated by JavaScript -->
+                            </div>
                         </div>
                     </div>
+                    
+                    <div class="search-box">
+                        <input type="text" id="searchPlayers" placeholder="Search players..." />
+                        <i class="fas fa-search"></i>
+                    </div>
+                    
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">All Positions</button>
+                        <button class="filter-btn" data-filter="starters">Starters Only</button>
+                        <button class="filter-btn" data-filter="bench">Bench Only</button>
+                    </div>
+                    
+                    <div class="sort-controls">
+                        <label for="sortBy">View Mode:</label>
+                        <select id="sortBy">
+                            <option value="optimal">Default (Optimal Lineup)</option>
+                            <option value="positional">Positional Comparison</option>
+                        </select>
+                    </div>
+                    
+                    <div class="team-sort-controls">
+                        <label for="teamSortBy">Sort Teams by:</label>
+                        <select id="teamSortBy">
+                            <option value="value">Total Value</option>
+                            <option value="starter-value">Starter Value</option>
+                            <option value="name">Team Name</option>
+                        </select>
+                    </div>
+                </div>
                     
                     <div class="rosters-grid" id="rostersGrid">
                         <!-- Dynamic roster cards will be inserted here -->

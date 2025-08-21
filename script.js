@@ -30,6 +30,14 @@ let allData = {
     processedRosters: []
 };
 
+let appState = {
+    selectedTeams: new Set(['all']), // Start with all teams selected
+    currentFilter: 'all',
+    viewMode: 'optimal', // 'optimal' or 'positional'
+    teamSort: 'value', // 'value', 'starter-value', 'name'
+    searchQuery: ''
+};
+
 // Utility functions
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -197,6 +205,29 @@ function organizePlayersByPosition(players) {
     return organized;
 }
 
+function organizePlayersByActualPosition(players) {
+    const organized = {
+        QB: [],
+        RB: [],
+        WR: [],
+        TE: []
+    };
+    
+    // Group players by their actual position and sort by value within each position
+    players.forEach(player => {
+        if (organized[player.position]) {
+            organized[player.position].push(player);
+        }
+    });
+    
+    // Sort each position group by value (highest first)
+    Object.keys(organized).forEach(position => {
+        organized[position].sort((a, b) => b.value - a.value);
+    });
+    
+    return organized;
+}
+
 // UI Functions
 function showLoading() {
     document.getElementById('loadingSpinner').style.display = 'flex';
@@ -226,9 +257,183 @@ function updateLeagueInfo() {
     document.getElementById('leagueName').textContent = leagueName;
 }
 
-function renderRosters(rosters = allData.processedRosters) {
+function populateTeamSelector() {
+    const optionsContainer = document.getElementById('teamSelectOptions');
+    
+    // Clear existing options (except "All Teams")
+    const existingOptions = optionsContainer.querySelectorAll('.select-option:not([data-value="all"])');
+    existingOptions.forEach(option => option.remove());
+    
+    // Add each team as an option
+    allData.processedRosters.forEach(roster => {
+        const option = document.createElement('div');
+        option.className = 'select-option';
+        option.setAttribute('data-value', roster.rosterId);
+        
+        option.innerHTML = `
+            <input type="checkbox" id="team-${roster.rosterId}" checked>
+            <label for="team-${roster.rosterId}">${roster.teamName}</label>
+        `;
+        
+        optionsContainer.appendChild(option);
+    });
+    
+    updateTeamSelectorLabel();
+}
+
+function updateTeamSelectorLabel() {
+    const label = document.getElementById('teamSelectLabel');
+    
+    if (appState.selectedTeams.has('all') || appState.selectedTeams.size === allData.processedRosters.length) {
+        label.textContent = 'All Teams';
+    } else if (appState.selectedTeams.size === 0) {
+        label.textContent = 'No Teams Selected';
+    } else if (appState.selectedTeams.size === 1) {
+        const selectedRosterId = Array.from(appState.selectedTeams)[0];
+        const team = allData.processedRosters.find(r => r.rosterId.toString() === selectedRosterId);
+        label.textContent = team ? team.teamName : '1 Team Selected';
+    } else {
+        label.textContent = `${appState.selectedTeams.size} Teams Selected`;
+    }
+}
+
+function handleTeamSelection(rosterId, isChecked) {
+    if (rosterId === 'all') {
+        if (isChecked) {
+            // Select all teams
+            appState.selectedTeams.clear();
+            appState.selectedTeams.add('all');
+            
+            // Check all checkboxes
+            document.querySelectorAll('.select-option input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        } else {
+            // Unselect all teams
+            appState.selectedTeams.clear();
+            
+            // Uncheck all checkboxes
+            document.querySelectorAll('.select-option input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+    } else {
+        // Handle individual team selection
+        if (isChecked) {
+            appState.selectedTeams.delete('all');
+            appState.selectedTeams.add(rosterId);
+            
+            // If all individual teams are selected, select "All" as well
+            if (appState.selectedTeams.size === allData.processedRosters.length) {
+                appState.selectedTeams.add('all');
+                document.getElementById('selectAll').checked = true;
+            }
+        } else {
+            appState.selectedTeams.delete(rosterId);
+            appState.selectedTeams.delete('all');
+            document.getElementById('selectAll').checked = false;
+        }
+    }
+    
+    updateTeamSelectorLabel();
+    applyFiltersAndRender();
+}
+
+function applyFiltersAndRender() {
+    let filteredRosters = [...allData.processedRosters];
+    
+    // Apply team filter
+    if (!appState.selectedTeams.has('all') && appState.selectedTeams.size > 0) {
+        filteredRosters = filteredRosters.filter(roster => 
+            appState.selectedTeams.has(roster.rosterId.toString())
+        );
+    }
+    
+    // Apply position filter and organize by view mode
+    filteredRosters = filteredRosters.map(roster => {
+        let filteredPlayers;
+        if (appState.currentFilter === 'starters') {
+            filteredPlayers = roster.players.filter(p => p.isStarter);
+        } else if (appState.currentFilter === 'bench') {
+            filteredPlayers = roster.players.filter(p => !p.isStarter);
+        } else {
+            filteredPlayers = roster.players;
+        }
+        
+        // Organize based on view mode
+        let organized;
+        if (appState.viewMode === 'positional') {
+            organized = organizePlayersByActualPosition(filteredPlayers);
+        } else {
+            organized = organizePlayersByPosition(filteredPlayers);
+        }
+        
+        return {
+            ...roster,
+            players: filteredPlayers,
+            organized: organized
+        };
+    });
+    
+    // Apply search filter
+    if (appState.searchQuery) {
+        filteredRosters = filteredRosters.map(roster => {
+            const filteredPlayers = roster.players.filter(player =>
+                player.name.toLowerCase().includes(appState.searchQuery) ||
+                player.position.toLowerCase().includes(appState.searchQuery) ||
+                player.team.toLowerCase().includes(appState.searchQuery)
+            );
+            
+            if (filteredPlayers.length === 0) {
+                return null;
+            }
+            
+            // Re-organize after search filtering
+            let organized;
+            if (appState.viewMode === 'positional') {
+                organized = organizePlayersByActualPosition(filteredPlayers);
+            } else {
+                organized = organizePlayersByPosition(filteredPlayers);
+            }
+            
+            return {
+                ...roster,
+                players: filteredPlayers,
+                organized: organized
+            };
+        }).filter(roster => roster !== null);
+    }
+    
+    // Apply team sorting
+    filteredRosters.sort((a, b) => {
+        switch (appState.teamSort) {
+            case 'value':
+                return b.stats.totalValue - a.stats.totalValue;
+            case 'starter-value':
+                return b.stats.starterValue - a.stats.starterValue;
+            case 'name':
+                return a.teamName.localeCompare(b.teamName);
+            default:
+                return b.stats.totalValue - a.stats.totalValue;
+        }
+    });
+    
+    renderRosters(filteredRosters);
+}
+
+function renderRosters(rosters) {
     const container = document.getElementById('rostersGrid');
     container.innerHTML = '';
+    
+    if (rosters.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #666;">
+                <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                <p>No teams match your current filters</p>
+            </div>
+        `;
+        return;
+    }
     
     rosters.forEach((roster, index) => {
         const card = createRosterCard(roster);
@@ -270,46 +475,65 @@ function createRosterCard(roster) {
 function createPositionSections(organized) {
     let html = '';
     
-    // Starters
-    html += '<div class="position-section">';
-    html += '<div class="position-header">STARTERS <span class="position-count">10</span></div>';
-    
-    CONFIG.positions.starters.forEach(positionDef => {
-        const players = organized.starters[positionDef.name] || [];
+    if (appState.viewMode === 'positional') {
+        // Positional comparison view
+        const positions = ['QB', 'RB', 'WR', 'TE'];
         
-        html += `<div class="position-group">`;
-        html += `<div class="position-subheader">${positionDef.name}</div>`;
-        
-        for (let i = 0; i < positionDef.count; i++) {
-            const player = players[i];
-            if (player) {
-                html += createPlayerRow(player);
-            } else {
-                html += `<div class="player-row empty">
-                    <div class="player-info">
-                        <div class="player-name">Empty Slot</div>
-                    </div>
-                    <div class="position-badge">${positionDef.name}</div>
-                    <div class="team-badge">-</div>
-                    <div class="player-value">0</div>
-                </div>`;
+        positions.forEach(position => {
+            const players = organized[position] || [];
+            if (players.length > 0) {
+                html += '<div class="position-section">';
+                html += `<div class="position-header">${position} <span class="position-count">${players.length}</span></div>`;
+                
+                players.forEach(player => {
+                    html += createPlayerRow(player);
+                });
+                
+                html += '</div>';
             }
-        }
-        html += '</div>';
-    });
-    
-    html += '</div>';
-    
-    // Bench
-    if (organized.bench.length > 0) {
+        });
+    } else {
+        // Optimal lineup view (default)
         html += '<div class="position-section">';
-        html += `<div class="position-header">BENCH <span class="position-count">${organized.bench.length}</span></div>`;
+        html += '<div class="position-header">STARTERS <span class="position-count">10</span></div>';
         
-        organized.bench.forEach(player => {
-            html += createPlayerRow(player);
+        CONFIG.positions.starters.forEach(positionDef => {
+            const players = organized.starters[positionDef.name] || [];
+            
+            html += `<div class="position-group">`;
+            html += `<div class="position-subheader">${positionDef.name}</div>`;
+            
+            for (let i = 0; i < positionDef.count; i++) {
+                const player = players[i];
+                if (player) {
+                    html += createPlayerRow(player);
+                } else {
+                    html += `<div class="player-row empty">
+                        <div class="player-info">
+                            <div class="player-name">Empty Slot</div>
+                        </div>
+                        <div class="position-badge">${positionDef.name}</div>
+                        <div class="team-badge">-</div>
+                        <div class="player-value">0</div>
+                    </div>`;
+                }
+            }
+            html += '</div>';
         });
         
         html += '</div>';
+        
+        // Bench
+        if (organized.bench && organized.bench.length > 0) {
+            html += '<div class="position-section">';
+            html += `<div class="position-header">BENCH <span class="position-count">${organized.bench.length}</span></div>`;
+            
+            organized.bench.forEach(player => {
+                html += createPlayerRow(player);
+            });
+            
+            html += '</div>';
+        }
     }
     
     return html;
@@ -334,6 +558,10 @@ function setupEventListeners() {
     // Refresh button
     document.getElementById('refreshBtn').addEventListener('click', loadAllData);
     
+    // Team selector
+    document.getElementById('teamSelectTrigger').addEventListener('click', toggleTeamSelector);
+    document.addEventListener('click', closeTeamSelectorOnOutsideClick);
+    
     // Search functionality
     document.getElementById('searchPlayers').addEventListener('input', handleSearch);
     
@@ -342,31 +570,38 @@ function setupEventListeners() {
         btn.addEventListener('click', handleFilter);
     });
     
-    // Sort dropdown
-    document.getElementById('sortBy').addEventListener('change', handleSort);
+    // View mode dropdown
+    document.getElementById('sortBy').addEventListener('change', handleViewModeChange);
+    
+    // Team sort dropdown
+    document.getElementById('teamSortBy').addEventListener('change', handleTeamSortChange);
+}
+
+function toggleTeamSelector() {
+    const customSelect = document.querySelector('.custom-select');
+    customSelect.classList.toggle('active');
+}
+
+function closeTeamSelectorOnOutsideClick(event) {
+    const customSelect = document.querySelector('.custom-select');
+    if (!customSelect.contains(event.target)) {
+        customSelect.classList.remove('active');
+    }
+}
+
+function setupTeamSelectorListeners() {
+    // Add event listeners for team checkboxes
+    document.getElementById('teamSelectOptions').addEventListener('change', (event) => {
+        if (event.target.type === 'checkbox') {
+            const rosterId = event.target.closest('.select-option').getAttribute('data-value');
+            handleTeamSelection(rosterId, event.target.checked);
+        }
+    });
 }
 
 function handleSearch(event) {
-    const query = event.target.value.toLowerCase();
-    const filteredRosters = allData.processedRosters.map(roster => {
-        const filteredPlayers = roster.players.filter(player =>
-            player.name.toLowerCase().includes(query) ||
-            player.position.toLowerCase().includes(query) ||
-            player.team.toLowerCase().includes(query)
-        );
-        
-        if (filteredPlayers.length === 0 && query !== '') {
-            return null;
-        }
-        
-        return {
-            ...roster,
-            players: query === '' ? roster.players : filteredPlayers,
-            organized: query === '' ? roster.organized : organizePlayersByPosition(filteredPlayers)
-        };
-    }).filter(roster => roster !== null);
-    
-    renderRosters(filteredRosters);
+    appState.searchQuery = event.target.value.toLowerCase();
+    applyFiltersAndRender();
 }
 
 function handleFilter(event) {
@@ -374,41 +609,18 @@ function handleFilter(event) {
     document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
     
-    const filter = event.target.getAttribute('data-filter');
-    let filteredRosters = [...allData.processedRosters];
-    
-    if (filter === 'starters') {
-        filteredRosters = filteredRosters.map(roster => ({
-            ...roster,
-            players: roster.players.filter(p => p.isStarter),
-            organized: organizePlayersByPosition(roster.players.filter(p => p.isStarter))
-        }));
-    } else if (filter === 'bench') {
-        filteredRosters = filteredRosters.map(roster => ({
-            ...roster,
-            players: roster.players.filter(p => !p.isStarter),
-            organized: { starters: {}, bench: roster.players.filter(p => !p.isStarter) }
-        }));
-    }
-    
-    renderRosters(filteredRosters);
+    appState.currentFilter = event.target.getAttribute('data-filter');
+    applyFiltersAndRender();
 }
 
-function handleSort(event) {
-    const sortBy = event.target.value;
-    
-    const sortedRosters = [...allData.processedRosters].sort((a, b) => {
-        switch (sortBy) {
-            case 'value':
-                return b.stats.totalValue - a.stats.totalValue;
-            case 'name':
-                return a.teamName.localeCompare(b.teamName);
-            default:
-                return b.stats.totalValue - a.stats.totalValue;
-        }
-    });
-    
-    renderRosters(sortedRosters);
+function handleViewModeChange(event) {
+    appState.viewMode = event.target.value;
+    applyFiltersAndRender();
+}
+
+function handleTeamSortChange(event) {
+    appState.teamSort = event.target.value;
+    applyFiltersAndRender();
 }
 
 // Main initialization
@@ -435,7 +647,9 @@ async function loadAllData() {
         
         // Update UI
         updateLeagueInfo();
-        renderRosters();
+        populateTeamSelector();
+        setupTeamSelectorListeners();
+        applyFiltersAndRender();
         showRosters();
         
         console.log('Data loaded successfully');

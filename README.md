@@ -7,8 +7,10 @@ A modern web application for analyzing fantasy football rosters with integrated 
 - **Real-time Data**: Fetches live roster data from Sleeper API
 - **Player Values**: Integrates FantasyCalc values for accurate player assessments
 - **Smart Positioning**: Automatically optimizes lineup based on player values
-- **Roster Comparison**: Compare all teams in your league side-by-side
+- **Multiple View Modes**: Switch between optimal lineup view and positional comparison
+- **Team Selection**: Choose specific teams to compare side-by-side
 - **Advanced Filtering**: Filter by starters, bench, or search for specific players
+- **Flexible Sorting**: Sort teams by total value, starter value, or team name
 - **Responsive Design**: Works perfectly on desktop and mobile devices
 
 ## 🚀 Live Demo
@@ -28,6 +30,20 @@ The app uses a SuperFlex league format:
 - **Bench:** All remaining eligible players
 
 *Note: Kickers, Defenses, and Defensive Players are excluded from analysis*
+
+## 👁️ View Modes
+
+### Default (Optimal Lineup)
+- Shows the best possible starting lineup based on FantasyCalc values
+- Automatically fills each position with the highest-value eligible player
+- Remaining players sorted by value on the bench
+- Perfect for seeing each team's maximum potential
+
+### Positional Comparison  
+- Groups all players by their actual position (QB, RB, WR, TE)
+- Sorts players within each position by FantasyCalc value
+- Dynamic section sizes that align across teams for easy comparison
+- Ideal for comparing positional depth between teams
 
 ## 🛠️ Configuration
 
@@ -121,8 +137,11 @@ php -S localhost:8000
 - [ ] League standings integration
 - [ ] Export/sharing capabilities
 - [ ] Multiple league support
-- [ ] Dark/light theme toggle
+- [ ] Save/bookmark team comparisons
 - [ ] Player news integration
+- [ ] Historical value tracking
+- [ ] Position-specific value metrics (targets, touches, etc.)
+- [ ] Dark/light theme toggle
 
 ## 🤝 Contributing
 
