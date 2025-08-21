@@ -27,6 +27,7 @@ let allData = {
     users: [],
     players: {},
     playerValues: {},
+    projectionData: {},
     processedRosters: []
 };
 
@@ -35,7 +36,8 @@ let appState = {
     currentFilter: 'all',
     viewMode: 'optimal', // 'optimal' or 'positional'
     teamSort: 'value', // 'value', 'starter-value', 'name'
-    searchQuery: ''
+    searchQuery: '',
+    projectionMode: 'week' // 'week' or 'season'
 };
 
 // Utility functions
@@ -47,8 +49,16 @@ const formatValue = (value) => {
 };
 
 const getValueClass = (value) => {
+    if (!value || value === 0) return 'low';
     if (value >= 5000) return 'high';
     if (value >= 1000) return 'medium';
+    return 'low';
+};
+
+const getProjectionClass = (projection) => {
+    if (!projection || projection === 0) return 'low';
+    if (projection >= 20) return 'high';
+    if (projection >= 15) return 'medium';
     return 'low';
 };
 
@@ -95,6 +105,28 @@ async function fetchFantasyCalcValues() {
     } catch (error) {
         console.error('Error fetching FantasyCalc values:', error);
         throw new Error('Failed to fetch player values from FantasyCalc');
+    }
+}
+
+async function fetchProjectionData() {
+    try {
+        const response = await fetch('espndata/player_data.json');
+        const data = await response.json();
+        
+        // Convert to a map by player name for easy lookup
+        const projectionMap = {};
+        data.forEach(player => {
+            projectionMap[player.playerName] = {
+                weekProjection: player.week_1_projection?.projected_points || 0,
+                seasonProjection: player.season_projection?.projected_avg_points || 0
+            };
+        });
+        
+        return projectionMap;
+    } catch (error) {
+        console.error('Error fetching projection data:', error);
+        console.warn('Projection data not available, continuing without it');
+        return {};
     }
 }
 
@@ -513,6 +545,7 @@ function createPositionSections(organized) {
                             <div class="player-name">Empty Slot</div>
                         </div>
                         <div class="position-badge">${positionDef.name}</div>
+                        <div class="player-projection low">0.0</div>
                         <div class="player-value">0</div>
                     </div>`;
                 }
@@ -539,6 +572,21 @@ function createPositionSections(organized) {
 }
 
 function createPlayerRow(player) {
+    // Get projection data for this player
+    const projection = allData.projectionData[player.name];
+    let projectionValue = 0;
+    let projectionText = 'N/A';
+    
+    if (projection) {
+        if (appState.projectionMode === 'week') {
+            projectionValue = projection.weekProjection;
+            projectionText = projectionValue.toFixed(1);
+        } else {
+            projectionValue = projection.seasonProjection * 17;
+            projectionText = projectionValue.toFixed(1);
+        }
+    }
+    
     return `
         <div class="player-row">
             <div class="player-info">
@@ -546,6 +594,7 @@ function createPlayerRow(player) {
                 <div class="player-details">${player.position} • ${player.team}</div>
             </div>
             <div class="position-badge">${player.position}</div>
+            <div class="player-projection ${getProjectionClass(projectionValue)}">${projectionText}</div>
             <div class="player-value ${getValueClass(player.value)}">${formatValue(player.value)}</div>
         </div>
     `;
@@ -573,6 +622,9 @@ function setupEventListeners() {
     
     // Team sort dropdown
     document.getElementById('teamSortBy').addEventListener('change', handleTeamSortChange);
+    
+    // Projection mode dropdown
+    document.getElementById('projectionMode').addEventListener('change', handleProjectionModeChange);
 }
 
 function toggleTeamSelector() {
@@ -621,6 +673,11 @@ function handleTeamSortChange(event) {
     applyFiltersAndRender();
 }
 
+function handleProjectionModeChange(event) {
+    appState.projectionMode = event.target.value;
+    applyFiltersAndRender();
+}
+
 // Main initialization
 async function loadAllData() {
     showLoading();
@@ -633,11 +690,15 @@ async function loadAllData() {
         console.log('Fetching FantasyCalc values...');
         const playerValues = await fetchFantasyCalcValues();
         
+        console.log('Fetching projection data...');
+        const projectionData = await fetchProjectionData();
+        
         // Store in global state
         allData = {
             ...allData,
             ...sleeperData,
-            playerValues
+            playerValues,
+            projectionData
         };
         
         console.log('Processing roster data...');
