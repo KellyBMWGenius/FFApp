@@ -354,6 +354,19 @@ function processRosterData() {
             .filter(p => p.isStarter)
             .reduce((sum, player) => sum + player.rawValue, 0);
         
+        // Calculate total weekly points for starters (sum of all starter projections)
+        const starterPlayers = rosterPlayers.filter(p => p.isStarter);
+        let totalWeeklyPoints = 0;
+        
+        starterPlayers.forEach(player => {
+            const espnId = allData.espnIdMap[player.id];
+            const projection = espnId ? allData.projectionData[espnId] : null;
+            
+            if (projection && projection.seasonProjection) {
+                totalWeeklyPoints += projection.seasonProjection;
+            }
+        });
+        
         processedRosters.push({
             rosterId: roster.roster_id,
             teamName,
@@ -363,8 +376,8 @@ function processRosterData() {
             stats: {
                 totalValue,
                 starterValue,
-                playerCount: rosterPlayers.length,
-                starterCount: rosterPlayers.filter(p => p.isStarter).length
+                totalWeeklyPoints,
+                starterCount: starterPlayers.length
             }
         });
     });
@@ -481,30 +494,52 @@ function populateTeamSelector() {
         option.setAttribute('data-value', roster.rosterId);
         
         option.innerHTML = `
-            <input type="checkbox" id="team-${roster.rosterId}" checked>
+            <input type="checkbox" id="team-${roster.rosterId}">
             <label for="team-${roster.rosterId}">${roster.teamName}</label>
         `;
         
         optionsContainer.appendChild(option);
     });
     
+    // Synchronize checkbox states with the app state
+    synchronizeCheckboxStates();
     updateTeamSelectorLabel();
 }
 
 function updateTeamSelectorLabel() {
     const label = document.getElementById('teamSelectLabel');
     
-    if (appState.selectedTeams.has('all') || appState.selectedTeams.size === allData.processedRosters.length) {
+    // Check if we have any teams in the data
+    if (!allData.processedRosters || allData.processedRosters.length === 0) {
+        label.textContent = 'No Teams Available';
+        return;
+    }
+    
+    const totalTeams = allData.processedRosters.length;
+    const selectedCount = appState.selectedTeams.size;
+    
+    // Handle "All Teams" selection
+    if (appState.selectedTeams.has('all') || selectedCount === totalTeams) {
         label.textContent = 'All Teams';
-    } else if (appState.selectedTeams.size === 0) {
+        return;
+    }
+    
+    // Handle no teams selected
+    if (selectedCount === 0) {
         label.textContent = 'No Teams Selected';
-    } else if (appState.selectedTeams.size === 1) {
+        return;
+    }
+    
+    // Handle single team selected
+    if (selectedCount === 1) {
         const selectedRosterId = Array.from(appState.selectedTeams)[0];
         const team = allData.processedRosters.find(r => r.rosterId.toString() === selectedRosterId);
         label.textContent = team ? team.teamName : '1 Team Selected';
-    } else {
-        label.textContent = `${appState.selectedTeams.size} Teams Selected`;
+        return;
     }
+    
+    // Handle multiple teams selected
+    label.textContent = `${selectedCount} Teams Selected`;
 }
 
 function handleTeamSelection(rosterId, isChecked) {
@@ -513,40 +548,52 @@ function handleTeamSelection(rosterId, isChecked) {
             // Select all teams
             appState.selectedTeams.clear();
             appState.selectedTeams.add('all');
-            
-            // Check all checkboxes
-            document.querySelectorAll('.select-option input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = true;
-            });
         } else {
             // Unselect all teams
             appState.selectedTeams.clear();
-            
-            // Uncheck all checkboxes
-            document.querySelectorAll('.select-option input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
         }
     } else {
         // Handle individual team selection
         if (isChecked) {
+            // Remove 'all' when selecting individual teams
             appState.selectedTeams.delete('all');
             appState.selectedTeams.add(rosterId);
             
             // If all individual teams are selected, select "All" as well
             if (appState.selectedTeams.size === allData.processedRosters.length) {
                 appState.selectedTeams.add('all');
-                document.getElementById('selectAll').checked = true;
             }
         } else {
+            // Remove the individual team
             appState.selectedTeams.delete(rosterId);
+            
+            // Always remove 'all' when deselecting individual teams
             appState.selectedTeams.delete('all');
-            document.getElementById('selectAll').checked = false;
         }
     }
     
+    // Synchronize all checkbox states with the app state
+    synchronizeCheckboxStates();
     updateTeamSelectorLabel();
     applyFiltersAndRender();
+}
+
+function synchronizeCheckboxStates() {
+    // Update "All Teams" checkbox
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (selectAllCheckbox) {
+        const shouldBeChecked = appState.selectedTeams.has('all') || appState.selectedTeams.size === allData.processedRosters.length;
+        selectAllCheckbox.checked = shouldBeChecked;
+    }
+    
+    // Update individual team checkboxes
+    allData.processedRosters.forEach(roster => {
+        const checkbox = document.getElementById(`team-${roster.rosterId}`);
+        if (checkbox) {
+            const shouldBeChecked = appState.selectedTeams.has('all') || appState.selectedTeams.has(roster.rosterId.toString());
+            checkbox.checked = shouldBeChecked;
+        }
+    });
 }
 
 function applyFiltersAndRender() {
@@ -666,8 +713,8 @@ function createRosterCard(roster, maxPlayersPerPosition = null) {
                     <div>Starter Value</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value">${roster.stats.playerCount}</div>
-                    <div>Players</div>
+                    <div class="stat-value">${roster.stats.totalWeeklyPoints.toFixed(1)}</div>
+                    <div>Total Weekly Points</div>
                 </div>
             </div>
         </div>
@@ -844,31 +891,36 @@ function setupEventListeners() {
         btn.addEventListener('click', handleFilter);
     });
     
-    // View mode dropdown
-    document.getElementById('sortBy').addEventListener('change', handleViewModeChange);
-    
-    // Team sort dropdown
-    document.getElementById('teamSortBy').addEventListener('change', handleTeamSortChange);
-    
-    // Projection mode dropdown
-    document.getElementById('projectionMode').addEventListener('change', handleProjectionModeChange);
-
-    // Value normalization dropdown
-    document.getElementById('valueNormalization').addEventListener('change', handleValueNormalizationChange);
+    // Custom dropdowns
+    setupCustomDropdowns();
 
     // Theme toggle
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 }
 
 function toggleTeamSelector() {
-    const customSelect = document.querySelector('.custom-select');
-    customSelect.classList.toggle('active');
+    const teamSelector = document.querySelector('.team-selector .custom-select');
+    const isCurrentlyOpen = teamSelector.classList.contains('active');
+    
+    // Close all other dropdowns first
+    document.querySelectorAll('.custom-select').forEach(dropdown => {
+        if (dropdown !== teamSelector) {
+            dropdown.classList.remove('active');
+        }
+    });
+    
+    // Toggle this dropdown
+    if (!isCurrentlyOpen) {
+        teamSelector.classList.add('active');
+    } else {
+        teamSelector.classList.remove('active');
+    }
 }
 
 function closeTeamSelectorOnOutsideClick(event) {
-    const customSelect = document.querySelector('.custom-select');
-    if (!customSelect.contains(event.target)) {
-        customSelect.classList.remove('active');
+    const teamSelector = document.querySelector('.team-selector .custom-select');
+    if (!teamSelector.contains(event.target)) {
+        teamSelector.classList.remove('active');
     }
 }
 
@@ -878,6 +930,19 @@ function setupTeamSelectorListeners() {
         if (event.target.type === 'checkbox') {
             const rosterId = event.target.closest('.select-option').getAttribute('data-value');
             handleTeamSelection(rosterId, event.target.checked);
+        }
+    });
+    
+    // Add click event listeners to make entire option rows clickable
+    document.getElementById('teamSelectOptions').addEventListener('click', (event) => {
+        const optionElement = event.target.closest('.select-option');
+        if (optionElement && event.target !== optionElement.querySelector('input[type="checkbox"]') && event.target.tagName !== 'LABEL') {
+            const checkbox = optionElement.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                const rosterId = optionElement.getAttribute('data-value');
+                handleTeamSelection(rosterId, checkbox.checked);
+            }
         }
     });
 }
@@ -893,23 +958,10 @@ function handleFilter(event) {
     applyFiltersAndRender();
 }
 
-function handleViewModeChange(event) {
-    appState.viewMode = event.target.value;
-    applyFiltersAndRender();
-}
 
-function handleTeamSortChange(event) {
-    appState.teamSort = event.target.value;
-    applyFiltersAndRender();
-}
 
-function handleProjectionModeChange(event) {
-    appState.projectionMode = event.target.value;
-    applyFiltersAndRender();
-}
-
-function handleValueNormalizationChange(event) {
-    appState.valueNormalization = event.target.value;
+function handleValueNormalizationChange(value) {
+    appState.valueNormalization = value;
     
     // Reprocess roster data to update normalized values
     if (allData.processedRosters && allData.processedRosters.length > 0) {
@@ -917,6 +969,137 @@ function handleValueNormalizationChange(event) {
     }
     
     applyFiltersAndRender();
+}
+
+function setupCustomDropdowns() {
+    // Function to close all dropdowns
+    const closeAllDropdowns = () => {
+        document.querySelectorAll('.custom-select').forEach(dropdown => {
+            dropdown.classList.remove('active');
+        });
+    };
+    
+    // Projection Mode dropdown
+    const projectionModeTrigger = document.getElementById('projectionModeTrigger');
+    const projectionModeOptions = document.getElementById('projectionModeOptions');
+    const projectionModeLabel = document.getElementById('projectionModeLabel');
+    
+    projectionModeTrigger.addEventListener('click', () => {
+        const customSelect = projectionModeTrigger.closest('.custom-select');
+        const isCurrentlyOpen = customSelect.classList.contains('active');
+        
+        // Close all other dropdowns first
+        closeAllDropdowns();
+        
+        // Toggle this dropdown
+        if (!isCurrentlyOpen) {
+            customSelect.classList.add('active');
+        }
+    });
+    
+    projectionModeOptions.addEventListener('click', (event) => {
+        if (event.target.classList.contains('select-option')) {
+            const value = event.target.getAttribute('data-value');
+            const label = event.target.textContent;
+            appState.projectionMode = value;
+            projectionModeLabel.textContent = label;
+            closeAllDropdowns();
+            applyFiltersAndRender();
+        }
+    });
+    
+    // View Mode dropdown
+    const sortByTrigger = document.getElementById('sortByTrigger');
+    const sortByOptions = document.getElementById('sortByOptions');
+    const sortByLabel = document.getElementById('sortByLabel');
+    
+    sortByTrigger.addEventListener('click', () => {
+        const customSelect = sortByTrigger.closest('.custom-select');
+        const isCurrentlyOpen = customSelect.classList.contains('active');
+        
+        // Close all other dropdowns first
+        closeAllDropdowns();
+        
+        // Toggle this dropdown
+        if (!isCurrentlyOpen) {
+            customSelect.classList.add('active');
+        }
+    });
+    
+    sortByOptions.addEventListener('click', (event) => {
+        if (event.target.classList.contains('select-option')) {
+            const value = event.target.getAttribute('data-value');
+            const label = event.target.textContent;
+            appState.viewMode = value;
+            sortByLabel.textContent = label;
+            closeAllDropdowns();
+            applyFiltersAndRender();
+        }
+    });
+    
+    // Sort Teams dropdown
+    const teamSortByTrigger = document.getElementById('teamSortByTrigger');
+    const teamSortByOptions = document.getElementById('teamSortByOptions');
+    const teamSortByLabel = document.getElementById('teamSortByLabel');
+    
+    teamSortByTrigger.addEventListener('click', () => {
+        const customSelect = teamSortByTrigger.closest('.custom-select');
+        const isCurrentlyOpen = customSelect.classList.contains('active');
+        
+        // Close all other dropdowns first
+        closeAllDropdowns();
+        
+        // Toggle this dropdown
+        if (!isCurrentlyOpen) {
+            customSelect.classList.add('active');
+        }
+    });
+    
+    teamSortByOptions.addEventListener('click', (event) => {
+        if (event.target.classList.contains('select-option')) {
+            const value = event.target.getAttribute('data-value');
+            const label = event.target.textContent;
+            appState.teamSort = value;
+            teamSortByLabel.textContent = label;
+            closeAllDropdowns();
+            applyFiltersAndRender();
+        }
+    });
+    
+    // Value Display dropdown
+    const valueNormalizationTrigger = document.getElementById('valueNormalizationTrigger');
+    const valueNormalizationOptions = document.getElementById('valueNormalizationOptions');
+    const valueNormalizationLabel = document.getElementById('valueNormalizationLabel');
+    
+    valueNormalizationTrigger.addEventListener('click', () => {
+        const customSelect = valueNormalizationTrigger.closest('.custom-select');
+        const isCurrentlyOpen = customSelect.classList.contains('active');
+        
+        // Close all other dropdowns first
+        closeAllDropdowns();
+        
+        // Toggle this dropdown
+        if (!isCurrentlyOpen) {
+            customSelect.classList.add('active');
+        }
+    });
+    
+    valueNormalizationOptions.addEventListener('click', (event) => {
+        if (event.target.classList.contains('select-option')) {
+            const value = event.target.getAttribute('data-value');
+            const label = event.target.textContent;
+            handleValueNormalizationChange(value);
+            valueNormalizationLabel.textContent = label;
+            closeAllDropdowns();
+        }
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('.custom-select')) {
+            closeAllDropdowns();
+        }
+    });
 }
 
 // Main initialization

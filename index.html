@@ -68,36 +68,60 @@
                     
                     <div class="projection-toggle">
                         <label for="projectionMode">Projection Mode:</label>
-                        <select id="projectionMode">
-                            <option value="average">Average</option>
-                            <option value="week">Week 1</option>
-                            <option value="season">Season</option>
-                        </select>
+                        <div class="custom-select">
+                            <div class="select-trigger" id="projectionModeTrigger">
+                                <span id="projectionModeLabel">Average</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="select-options" id="projectionModeOptions">
+                                <div class="select-option" data-value="average">Average</div>
+                                <div class="select-option" data-value="week">Week 1</div>
+                                <div class="select-option" data-value="season">Season</div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="sort-controls">
                         <label for="sortBy">View Mode:</label>
-                        <select id="sortBy">
-                            <option value="optimal">Default (Optimal Lineup)</option>
-                            <option value="positional">Positional Comparison</option>
-                        </select>
+                        <div class="custom-select">
+                            <div class="select-trigger" id="sortByTrigger">
+                                <span id="sortByLabel">Default (Optimal Lineup)</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="select-options" id="sortByOptions">
+                                <div class="select-option" data-value="optimal">Default (Optimal Lineup)</div>
+                                <div class="select-option" data-value="positional">Positional Comparison</div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="team-sort-controls">
                         <label for="teamSortBy">Sort Teams by:</label>
-                        <select id="teamSortBy">
-                            <option value="value">Total Value</option>
-                            <option value="starter-value">Starter Value</option>
-                            <option value="name">Team Name</option>
-                        </select>
+                        <div class="custom-select">
+                            <div class="select-trigger" id="teamSortByTrigger">
+                                <span id="teamSortByLabel">Total Value</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="select-options" id="teamSortByOptions">
+                                <div class="select-option" data-value="value">Total Value</div>
+                                <div class="select-option" data-value="starter-value">Starter Value</div>
+                                <div class="select-option" data-value="name">Team Name</div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="value-normalization-toggle">
                         <label for="valueNormalization">Value Display:</label>
-                        <select id="valueNormalization">
-                            <option value="raw">Raw Values</option>
-                            <option value="normalized">Normalized (0-100)</option>
-                        </select>
+                        <div class="custom-select">
+                            <div class="select-trigger" id="valueNormalizationTrigger">
+                                <span id="valueNormalizationLabel">Raw Values</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="select-options" id="valueNormalizationOptions">
+                                <div class="select-option" data-value="raw">Raw Values</div>
+                                <div class="select-option" data-value="normalized">Normalized (0-100)</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                     
