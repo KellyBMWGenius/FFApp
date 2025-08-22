@@ -42,88 +42,110 @@
                 </div>
 
                 <div class="rosters-container" id="rostersContainer" style="display: none;">
-                                    <div class="controls-bar">
-                    <div class="team-selector">
-                        <label for="teamSelect">Teams to Display:</label>
-                        <div class="custom-select">
-                            <div class="select-trigger" id="teamSelectTrigger">
-                                <span id="teamSelectLabel">All Teams</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="select-options" id="teamSelectOptions">
-                                <div class="select-option" data-value="all">
-                                    <input type="checkbox" id="selectAll" checked>
-                                    <label for="selectAll">All Teams</label>
+                    <header class="controls-header">
+                        <!-- Group 1: Team Selection -->
+                        <div class="control-item">
+                            <label for="teamSelect">Teams:</label>
+                            <div class="custom-select">
+                                <div class="select-trigger" id="teamSelectTrigger">
+                                    <span id="teamSelectLabel">All Teams</span>
+                                    <i class="fas fa-chevron-down"></i>
                                 </div>
-                                <!-- Team options will be populated by JavaScript -->
+                                <div class="select-options" id="teamSelectOptions">
+                                    <div class="select-option" data-value="all">
+                                        <input type="checkbox" id="selectAll" checked>
+                                        <label for="selectAll">All Teams</label>
+                                    </div>
+                                    <!-- Team options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Group 2: Position Toggles -->
+                        <div class="control-item">
+                            <div class="toggle-buttons" id="position-toggles">
+                                <button class="active" data-filter="all">All Positions</button>
+                                <button data-filter="starters">Starters Only</button>
+                                <button data-filter="bench">Bench Only</button>
+                            </div>
+                        </div>
+
+                        <!-- Spacer to push subsequent items to the right -->
+                        <div class="spacer"></div>
+
+                        <!-- Group 3: Team Sorting -->
+                        <div class="control-item">
+                            <label for="teamSortBy">Sort Teams:</label>
+                            <div class="custom-select">
+                                <div class="select-trigger" id="teamSortByTrigger">
+                                    <span id="teamSortByLabel">Total Value</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="select-options" id="teamSortByOptions">
+                                    <div class="select-option" data-value="value">Total Value</div>
+                                    <div class="select-option" data-value="starter-value">Starter Value</div>
+                                    <div class="select-option" data-value="name">Team Name</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Group 4: Display Options Button and Popover -->
+                        <div class="display-options-container">
+                            <button class="display-options-btn" id="display-options-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l.34-.1a1.464 1.464 0 0 1 .872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+                                </svg>
+                                Display Options
+                            </button>
+
+                        </div>
+                    </header>
+                    
+                    <!-- Display Options Panel -->
+                    <div class="display-options-panel hidden" id="display-options-panel">
+                        <div class="display-options-content">
+                            <div class="control-item">
+                                <label for="projectionMode">Projection Mode:</label>
+                                <div class="custom-select">
+                                    <div class="select-trigger" id="projectionModeTrigger">
+                                        <span id="projectionModeLabel">Average</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="select-options" id="projectionModeOptions">
+                                        <div class="select-option" data-value="average">Average</div>
+                                        <div class="select-option" data-value="week">Week 1</div>
+                                        <div class="select-option" data-value="season">Season</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <label for="sortBy">View Mode:</label>
+                                <div class="custom-select">
+                                    <div class="select-trigger" id="sortByTrigger">
+                                        <span id="sortByLabel">Default (Optimal Lineup)</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="select-options" id="sortByOptions">
+                                        <div class="select-option" data-value="optimal">Default (Optimal Lineup)</div>
+                                        <div class="select-option" data-value="positional">Positional Comparison</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="control-item">
+                                <label for="valueNormalization">Value Display:</label>
+                                <div class="custom-select">
+                                    <div class="select-trigger" id="valueNormalizationTrigger">
+                                        <span id="valueNormalizationLabel">Raw Values</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="select-options" id="valueNormalizationOptions">
+                                        <div class="select-option" data-value="raw">Raw Values</div>
+                                        <div class="select-option" data-value="normalized">Normalized (0-100)</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="filter-buttons">
-                        <button class="filter-btn active" data-filter="all">All Positions</button>
-                        <button class="filter-btn" data-filter="starters">Starters Only</button>
-                        <button class="filter-btn" data-filter="bench">Bench Only</button>
-                    </div>
-                    
-                    <div class="projection-toggle">
-                        <label for="projectionMode">Projection Mode:</label>
-                        <div class="custom-select">
-                            <div class="select-trigger" id="projectionModeTrigger">
-                                <span id="projectionModeLabel">Average</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="select-options" id="projectionModeOptions">
-                                <div class="select-option" data-value="average">Average</div>
-                                <div class="select-option" data-value="week">Week 1</div>
-                                <div class="select-option" data-value="season">Season</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="sort-controls">
-                        <label for="sortBy">View Mode:</label>
-                        <div class="custom-select">
-                            <div class="select-trigger" id="sortByTrigger">
-                                <span id="sortByLabel">Default (Optimal Lineup)</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="select-options" id="sortByOptions">
-                                <div class="select-option" data-value="optimal">Default (Optimal Lineup)</div>
-                                <div class="select-option" data-value="positional">Positional Comparison</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="team-sort-controls">
-                        <label for="teamSortBy">Sort Teams by:</label>
-                        <div class="custom-select">
-                            <div class="select-trigger" id="teamSortByTrigger">
-                                <span id="teamSortByLabel">Total Value</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="select-options" id="teamSortByOptions">
-                                <div class="select-option" data-value="value">Total Value</div>
-                                <div class="select-option" data-value="starter-value">Starter Value</div>
-                                <div class="select-option" data-value="name">Team Name</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="value-normalization-toggle">
-                        <label for="valueNormalization">Value Display:</label>
-                        <div class="custom-select">
-                            <div class="select-trigger" id="valueNormalizationTrigger">
-                                <span id="valueNormalizationLabel">Raw Values</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="select-options" id="valueNormalizationOptions">
-                                <div class="select-option" data-value="raw">Raw Values</div>
-                                <div class="select-option" data-value="normalized">Normalized (0-100)</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                     
                     <div class="rosters-grid" id="rostersGrid">
                         <!-- Dynamic roster cards will be inserted here -->

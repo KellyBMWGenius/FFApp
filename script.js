@@ -884,12 +884,39 @@ function setupEventListeners() {
     document.getElementById('teamSelectTrigger').addEventListener('click', toggleTeamSelector);
     document.addEventListener('click', closeTeamSelectorOnOutsideClick);
     
-
-    
-    // Filter buttons
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', handleFilter);
+    // Initialize position filter buttons
+    document.querySelectorAll('#position-toggles button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active class from all buttons
+            document.querySelectorAll('#position-toggles button').forEach(b => b.classList.remove('active'));
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            const filter = this.getAttribute('data-filter');
+            filterPlayersByPosition(filter);
+        });
     });
+
+    // Initialize display options panel
+    const displayOptionsBtn = document.getElementById('display-options-btn');
+    const displayOptionsPanel = document.getElementById('display-options-panel');
+
+    if (displayOptionsBtn && displayOptionsPanel) {
+        // Toggle panel visibility
+        displayOptionsBtn.addEventListener('click', function(event) {
+            event.stopPropagation();
+            const isHidden = displayOptionsPanel.classList.toggle('hidden');
+            displayOptionsBtn.classList.toggle('active', !isHidden);
+        });
+
+        // Close panel when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!displayOptionsPanel.contains(event.target) && !displayOptionsBtn.contains(event.target) && !displayOptionsPanel.classList.contains('hidden')) {
+                displayOptionsPanel.classList.add('hidden');
+                displayOptionsBtn.classList.remove('active');
+            }
+        });
+    }
     
     // Custom dropdowns
     setupCustomDropdowns();
@@ -899,7 +926,7 @@ function setupEventListeners() {
 }
 
 function toggleTeamSelector() {
-    const teamSelector = document.querySelector('.team-selector .custom-select');
+    const teamSelector = document.querySelector('.controls-header .custom-select');
     const isCurrentlyOpen = teamSelector.classList.contains('active');
     
     // Close all other dropdowns first
@@ -918,7 +945,7 @@ function toggleTeamSelector() {
 }
 
 function closeTeamSelectorOnOutsideClick(event) {
-    const teamSelector = document.querySelector('.team-selector .custom-select');
+    const teamSelector = document.querySelector('.controls-header .custom-select');
     if (!teamSelector.contains(event.target)) {
         teamSelector.classList.remove('active');
     }
@@ -951,10 +978,15 @@ function setupTeamSelectorListeners() {
 
 function handleFilter(event) {
     // Update active filter button
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('#position-toggles button').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
     
     appState.currentFilter = event.target.getAttribute('data-filter');
+    applyFiltersAndRender();
+}
+
+function filterPlayersByPosition(filter) {
+    appState.currentFilter = filter;
     applyFiltersAndRender();
 }
 

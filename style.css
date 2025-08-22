@@ -133,6 +133,7 @@ body {
     width: 44px;
     height: 44px;
     box-shadow: var(--shadow);
+    transition: all 0.3s ease;
 }
 
 .theme-toggle:hover {
@@ -143,6 +144,11 @@ body {
 .theme-toggle i {
     font-size: 1.2rem;
     color: var(--accent-primary);
+    transition: transform 0.6s ease;
+}
+
+.theme-toggle:hover i {
+    transform: rotate(360deg);
 }
 
 .league-info {
@@ -221,31 +227,32 @@ body {
     border-left: 4px solid #dc2626;
 }
 
-/* Controls bar */
-.controls-bar {
+/* Controls header - compact horizontal design */
+.controls-header {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
     align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
     background: var(--bg-controls);
-    padding: 1.5rem;
-    border-radius: 16px;
-    margin-bottom: 2rem;
+    border-radius: 10px;
     border: 1px solid var(--border-primary);
     box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1000;
 }
 
-/* Team selector */
-.team-selector {
+/* General control grouping & items */
+.control-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    min-width: 320px;
+    gap: 8px;
 }
 
-.team-selector label {
+.control-item label {
+    font-size: 14px;
     color: var(--text-secondary);
+    white-space: nowrap;
     font-weight: 500;
 }
 
@@ -254,9 +261,10 @@ body {
     position: relative;
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
-    border-radius: 10px;
-    min-width: 300px;
+    border-radius: 6px;
+    min-width: 140px;
     box-shadow: var(--shadow);
+    transition: border-color 0.2s ease;
 }
 
 .custom-select:hover {
@@ -264,7 +272,7 @@ body {
 }
 
 .select-trigger {
-    padding: 0.75rem 1rem;
+    padding: 8px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -272,10 +280,17 @@ body {
     user-select: none;
     color: var(--text-primary);
     font-weight: 500;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.select-trigger:hover {
+    background: var(--bg-tertiary);
 }
 
 .select-trigger i {
     color: var(--text-muted);
+    transition: transform 0.2s ease;
 }
 
 .custom-select.active .select-trigger i {
@@ -290,10 +305,10 @@ body {
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-top: none;
-    border-radius: 0 0 12px 12px;
+    border-radius: 0 0 8px 8px;
     max-height: 800px;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 9999;
     display: none;
     box-shadow: var(--shadow-hover);
 }
@@ -303,13 +318,13 @@ body {
 }
 
 .select-option {
-    padding: 0.75rem 1rem;
+    padding: 8px 12px;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 8px;
     cursor: pointer;
     color: var(--text-primary);
-    font-size: 0.75rem;
+    font-size: 14px;
     user-select: none;
 }
 
@@ -329,7 +344,7 @@ body {
 
 .select-option label {
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 14px;
     flex: 1;
     color: var(--text-primary);
 }
@@ -339,56 +354,143 @@ body {
     font-weight: 500;
 }
 
-.filter-buttons {
+/* Toggle buttons styling */
+.toggle-buttons {
     display: flex;
-    gap: 0.5rem;
-}
-
-.filter-btn {
-    padding: 0.6rem 1rem;
-    border: 1px solid var(--border-primary);
     background: var(--bg-secondary);
-    color: var(--text-primary);
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border-primary);
 }
 
-.filter-btn:hover {
+.toggle-buttons button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s, color 0.2s;
+    border-right: 1px solid var(--border-primary);
+}
+
+.toggle-buttons button:last-child {
+    border-right: none;
+}
+
+.toggle-buttons button.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.toggle-buttons button:hover:not(.active) {
+    background: var(--bg-tertiary);
+}
+
+/* Spacer to push items to the right */
+.spacer {
+    flex-grow: 1;
+}
+
+/* Display options button & popover */
+.display-options-container {
+    position: relative;
+}
+
+.display-options-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.display-options-btn:hover {
     background: var(--bg-tertiary);
     border-color: var(--accent-primary);
 }
 
-.filter-btn.active {
+.display-options-btn.active {
     background: var(--accent-primary);
-    border-color: var(--accent-primary);
     color: white;
-    box-shadow: var(--shadow);
+    border-color: var(--accent-primary);
 }
 
-.projection-toggle,
-.sort-controls,
-.team-sort-controls,
-.value-normalization-toggle {
+.display-options-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Display Options Panel */
+.display-options-panel {
+    background: var(--bg-controls);
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    position: relative;
+    z-index: 1000;
+}
+
+.display-options-panel.hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    max-height: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+.display-options-content {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 24px;
+    flex-wrap: wrap;
 }
 
-.projection-toggle label,
-.sort-controls label,
-.team-sort-controls label,
-.value-normalization-toggle label {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-    white-space: nowrap;
+.display-options-panel .control-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+    flex: 1;
 }
 
+.display-options-panel .custom-select {
+    min-width: 160px;
+    flex: 1;
+    position: relative;
+    z-index: 9999;
+}
 
-
-
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .display-options-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+    
+    .display-options-panel .control-item {
+        min-width: auto;
+        justify-content: space-between;
+    }
+    
+    .display-options-panel .custom-select {
+        min-width: 140px;
+    }
+}
 
 /* Custom scrollbar for all dropdown options */
 .select-options::-webkit-scrollbar {
@@ -409,35 +511,28 @@ body {
     background: var(--accent-primary);
 }
 
-/* Ensure consistent styling for all custom dropdowns */
-.projection-toggle .custom-select,
-.sort-controls .custom-select,
-.team-sort-controls .custom-select,
-.value-normalization-toggle .custom-select {
-    min-width: 140px;
+/* Team selector specific styling */
+.controls-header .control-item:first-child .custom-select {
+    min-width: 200px;
 }
 
-/* Keep team selector dropdown styling separate */
-.team-selector .custom-select {
-    min-width: 300px;
+.controls-header .control-item:first-child .select-options {
+    min-width: 250px;
+    left: 0;
+    right: auto;
 }
 
-/* Make team selector dropdown show more teams without scrolling */
-.team-selector .custom-select .select-options {
-    max-height: 1000px;
+/* Ensure proper z-index and positioning for all dropdowns */
+.controls-header .custom-select {
+    z-index: 9999;
 }
 
-.team-selector .custom-select .select-trigger {
-    font-size: 0.85rem;
-}
 
-.projection-toggle .custom-select .select-trigger,
-.sort-controls .custom-select .select-trigger,
-.team-sort-controls .custom-select .select-trigger,
-.value-normalization-toggle .custom-select .select-trigger {
-    padding: 0.75rem 1rem;
-    font-size: 0.75rem;
-    font-weight: 500;
+
+/* Make sure the team selector dropdown doesn't get cut off */
+.controls-header .control-item:first-child .select-options {
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 /* Rosters grid */
@@ -446,6 +541,8 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
     gap: 1.5rem;
     margin-top: 1rem;
+    position: relative;
+    z-index: 1;
 }
 
 /* Simplified roster card without complex animations */
@@ -794,20 +891,17 @@ body {
 
 /* Responsive design */
 @media (max-width: 1200px) {
-    .controls-bar {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: stretch;
+    .controls-header {
+        gap: 12px;
+        padding: 10px 12px;
     }
     
-    .controls-bar > div {
-        display: flex;
-        justify-content: center;
+    .control-item label {
+        font-size: 13px;
     }
     
-    .filter-buttons {
-        justify-content: center;
-        flex-wrap: wrap;
+    .custom-select {
+        min-width: 120px;
     }
 }
 
@@ -822,37 +916,30 @@ body {
         justify-content: center;
     }
 
-    .controls-bar {
+    .controls-header {
         flex-direction: column;
         align-items: stretch;
+        gap: 12px;
+        padding: 12px;
     }
 
-    .team-selector {
-        min-width: unset;
-        width: 100%;
-    }
-
-    .custom-select {
-        min-width: unset;
-        width: 100%;
-    }
-
-    .sort-controls,
-    .team-sort-controls {
-        width: 100%;
+    .control-item {
         justify-content: space-between;
     }
 
-    .sort-controls select,
-    .team-sort-controls select {
-        min-width: unset;
-        flex: 1;
-        margin-left: 0.5rem;
+    .spacer {
+        display: none;
     }
 
-    .filter-buttons {
+    .toggle-buttons {
         justify-content: center;
     }
+
+    .display-options-container {
+        align-self: center;
+    }
+
+
 
     .rosters-grid {
         grid-template-columns: repeat(3, 1fr);
@@ -886,6 +973,34 @@ body {
 @media (max-width: 480px) {
     .container {
         padding: 0 0.5rem;
+    }
+
+    .controls-header {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .control-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .control-item label {
+        text-align: center;
+    }
+
+    .toggle-buttons {
+        flex-direction: column;
+    }
+
+    .toggle-buttons button {
+        border-right: none;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .toggle-buttons button:last-child {
+        border-bottom: none;
     }
 
     .rosters-grid {
