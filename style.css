@@ -505,6 +505,12 @@ body {
     font-size: 0.9rem;
 }
 
+.player-projection.very-high {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
 .player-projection.high {
     background: rgba(34, 197, 94, 0.2);
     color: #22c55e;
@@ -530,6 +536,10 @@ body {
     border-radius: 4px;
     min-width: 4rem;
     font-size: 0.9rem;
+}
+
+.player-value.very-high {
+    color: #10b981;
 }
 
 .player-value.high {
