@@ -361,7 +361,8 @@ body {
 
 .projection-toggle,
 .sort-controls,
-.team-sort-controls {
+.team-sort-controls,
+.value-normalization-toggle {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -369,7 +370,8 @@ body {
 
 .projection-toggle label,
 .sort-controls label,
-.team-sort-controls label {
+.team-sort-controls label,
+.value-normalization-toggle label {
     font-size: 0.9rem;
     color: var(--text-secondary);
     font-weight: 500;
@@ -378,7 +380,8 @@ body {
 
 .projection-toggle select,
 .sort-controls select,
-.team-sort-controls select {
+.team-sort-controls select,
+.value-normalization-toggle select {
     padding: 0.5rem;
     border: 1px solid var(--border-primary);
     background: var(--bg-secondary);
@@ -392,7 +395,8 @@ body {
 
 .projection-toggle select:focus,
 .sort-controls select:focus,
-.team-sort-controls select:focus {
+.team-sort-controls select:focus,
+.value-normalization-toggle select:focus {
     outline: none;
     border-color: var(--accent-primary);
 }

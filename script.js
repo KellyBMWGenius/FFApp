@@ -38,6 +38,7 @@ let appState = {
     teamSort: 'value', // 'value', 'starter-value', 'name'
     searchQuery: '',
     projectionMode: 'average', // 'week', 'average', or 'season'
+    valueNormalization: 'raw', // 'raw' or 'normalized'
     theme: 'dark' // 'dark' or 'light'
 };
 
@@ -80,15 +81,41 @@ let missingEspnIds = new Set();
 // Utility functions
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const formatValue = (value) => {
+// Normalize FantasyCalc values to 0-100 scale
+const normalizeValue = (value, maxValue) => {
+    if (!value || value === 0 || !maxValue || maxValue === 0) return 0;
+    return Math.round((value / maxValue) * 100);
+};
+
+// Get the maximum value from all player values for normalization
+const getMaxPlayerValue = (playerValues) => {
+    if (!playerValues || Object.keys(playerValues).length === 0) return 1;
+    return Math.max(...Object.values(playerValues));
+};
+
+const formatValue = (value, isNormalized = false) => {
     if (!value || value === 0) return '0';
+    
+    if (isNormalized) {
+        // For normalized values (0-100), show as whole numbers
+        return Math.round(value).toString();
+    }
+    
     return value.toLocaleString();
 };
 
-const getValueClass = (value, position = null) => {
+const getValueClass = (value, position = null, isNormalized = false) => {
     if (!value || value === 0) return 'low';
     
-    // Position-specific thresholds
+    if (isNormalized) {
+        // Normalized value thresholds (0-100 scale)
+        if (value >= 90) return 'very-high';
+        if (value >= 75) return 'high';
+        if (value >= 50) return 'medium';
+        return 'low';
+    }
+    
+    // Position-specific thresholds for raw values
     if (position) {
         switch (position) {
             case 'QB':
@@ -121,10 +148,45 @@ const getValueClass = (value, position = null) => {
     return 'low';
 };
 
-const getProjectionClass = (projection, position = null) => {
+const getProjectionClass = (projection, position = null, projectionMode = 'average') => {
     if (!projection || projection === 0) return 'low';
     
-    // Position-specific thresholds
+    // Handle season projections (17x average) with appropriate thresholds
+    // Season mode multiplies average projections by 17 weeks, so thresholds are scaled accordingly
+    if (projectionMode === 'season') {
+        if (position) {
+            switch (position) {
+                case 'QB':
+                    if (projection >= 425) return 'very-high';    // 25 * 17
+                    if (projection >= 340) return 'high';         // 20 * 17
+                    if (projection >= 255) return 'medium';       // 15 * 17
+                    return 'low';
+                case 'RB':
+                    if (projection >= 340) return 'very-high';    // 20 * 17
+                    if (projection >= 255) return 'high';         // 15 * 17
+                    if (projection >= 170) return 'medium';       // 10 * 17
+                    return 'low';
+                case 'WR':
+                    if (projection >= 306) return 'very-high';    // 18 * 17
+                    if (projection >= 238) return 'high';         // 14 * 17
+                    if (projection >= 153) return 'medium';       // 9 * 17
+                    return 'low';
+                case 'TE':
+                    if (projection >= 255) return 'very-high';    // 15 * 17
+                    if (projection >= 204) return 'high';         // 12 * 17
+                    if (projection >= 136) return 'medium';       // 8 * 17
+                    return 'low';
+            }
+        }
+        
+        // Fallback thresholds for season mode
+        if (projection >= 374) return 'very-high';    // 22 * 17
+        if (projection >= 272) return 'high';         // 16 * 17
+        if (projection >= 170) return 'medium';       // 10 * 17
+        return 'low';
+    }
+    
+    // Standard thresholds for average/week mode
     if (position) {
         switch (position) {
             case 'QB':
@@ -261,28 +323,36 @@ function processRosterData() {
                     return null;
                 }
                 
-                const value = allData.playerValues[playerId] || 0;
+                const rawValue = allData.playerValues[playerId] || 0;
+                
+                // Get normalized value if enabled
+                let displayValue = rawValue;
+                if (appState.valueNormalization === 'normalized' && allData.playerValues) {
+                    const maxValue = getMaxPlayerValue(allData.playerValues);
+                    displayValue = normalizeValue(rawValue, maxValue);
+                }
                 
                 return {
                     id: playerId,
                     name: `${player.first_name} ${player.last_name}`,
                     position: player.position,
                     team: player.team || 'FA',
-                    value: value,
+                    value: displayValue,
+                    rawValue: rawValue, // Keep raw value for calculations
                     isStarter: roster.starters?.includes(playerId) || false
                 };
             })
             .filter(player => player !== null)
-            .sort((a, b) => b.value - a.value);
+            .sort((a, b) => b.rawValue - a.rawValue);
         
         // Organize into positions
         const organizedRoster = organizePlayersByPosition(rosterPlayers);
         
-        // Calculate total values
-        const totalValue = rosterPlayers.reduce((sum, player) => sum + player.value, 0);
+        // Calculate total values using raw values for consistency
+        const totalValue = rosterPlayers.reduce((sum, player) => sum + player.rawValue, 0);
         const starterValue = rosterPlayers
             .filter(p => p.isStarter)
-            .reduce((sum, player) => sum + player.value, 0);
+            .reduce((sum, player) => sum + player.rawValue, 0);
         
         processedRosters.push({
             rosterId: roster.roster_id,
@@ -326,8 +396,8 @@ function organizePlayersByPosition(players) {
             let bestValue = -1;
             
             availablePlayers.forEach((player, index) => {
-                if (positions.includes(player.position) && player.value > bestValue) {
-                    bestValue = player.value;
+                if (positions.includes(player.position) && player.rawValue > bestValue) {
+                    bestValue = player.rawValue;
                     bestPlayerIndex = index;
                 }
             });
@@ -340,7 +410,7 @@ function organizePlayersByPosition(players) {
     });
     
     // Remaining players go to bench
-    organized.bench = availablePlayers.sort((a, b) => b.value - a.value);
+    organized.bench = availablePlayers.sort((a, b) => b.rawValue - a.rawValue);
     
     return organized;
 }
@@ -362,7 +432,7 @@ function organizePlayersByActualPosition(players) {
     
     // Sort each position group by value (highest first)
     Object.keys(organized).forEach(position => {
-        organized[position].sort((a, b) => b.value - a.value);
+        organized[position].sort((a, b) => b.rawValue - a.rawValue);
     });
     
     return organized;
@@ -752,8 +822,8 @@ function createPlayerRow(player) {
                 <div class="player-details">${player.team}</div>
             </div>
             <div class="position-badge">${player.position}</div>
-            <div class="player-projection ${getProjectionClass(projectionValue, player.position)}">${projectionText}</div>
-            <div class="player-value ${getValueClass(player.value, player.position)}">${formatValue(player.value)}</div>
+            <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
+            <div class="player-value ${getValueClass(player.value, player.position, appState.valueNormalization === 'normalized')}">${formatValue(player.value, appState.valueNormalization === 'normalized')}</div>
         </div>
     `;
 }
@@ -782,6 +852,9 @@ function setupEventListeners() {
     
     // Projection mode dropdown
     document.getElementById('projectionMode').addEventListener('change', handleProjectionModeChange);
+
+    // Value normalization dropdown
+    document.getElementById('valueNormalization').addEventListener('change', handleValueNormalizationChange);
 
     // Theme toggle
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
@@ -832,6 +905,17 @@ function handleTeamSortChange(event) {
 
 function handleProjectionModeChange(event) {
     appState.projectionMode = event.target.value;
+    applyFiltersAndRender();
+}
+
+function handleValueNormalizationChange(event) {
+    appState.valueNormalization = event.target.value;
+    
+    // Reprocess roster data to update normalized values
+    if (allData.processedRosters && allData.processedRosters.length > 0) {
+        allData.processedRosters = processRosterData();
+    }
+    
     applyFiltersAndRender();
 }
 
