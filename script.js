@@ -990,3 +990,416 @@ window.debug = {
     missingEspnIds,
     findProjectionByEspnId
 };
+
+// Teamify Dashboard JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all charts
+    initializeCharts();
+    
+    // Add event listeners
+    addEventListeners();
+    
+    // Initialize sidebar functionality
+    initializeSidebar();
+});
+
+function initializeCharts() {
+    // Main Performance Chart
+    const performanceCtx = document.getElementById('performanceChart');
+    if (performanceCtx) {
+        new Chart(performanceCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Performance',
+                    data: [65, 72, 68, 75, 82, 78, 85, 88, 92, 89, 95, 98],
+                    borderColor: '#6A5ACD',
+                    backgroundColor: 'rgba(106, 90, 205, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#6A5ACD',
+                    pointBorderColor: '#FFFFFF',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#2D2D2D',
+                        titleColor: '#FFFFFF',
+                        bodyColor: '#E0E0E0',
+                        borderColor: '#6A5ACD',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].label + ' 2019';
+                            },
+                            label: function(context) {
+                                return '546 Tasks Completed';
+                            },
+                            afterLabel: function(context) {
+                                return '646 Tasks Assigned';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: '#404040',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#B0B0B0',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: '#404040',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#B0B0B0',
+                            font: {
+                                size: 12
+                            },
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        min: 0,
+                        max: 100
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+    }
+
+    // Hours Spent Mini Chart
+    const hoursCtx = document.getElementById('hoursChart');
+    if (hoursCtx) {
+        new Chart(hoursCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Hours',
+                    data: [8.5, 7.2, 9.1, 8.8, 6.5, 4.2, 3.8],
+                    backgroundColor: '#10B981',
+                    borderColor: '#10B981',
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Repository Mini Chart
+    const repoCtx = document.getElementById('repoChart');
+    if (repoCtx) {
+        new Chart(repoCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Files',
+                    data: [45, 52, 48, 55, 62, 58, 65],
+                    borderColor: '#6A5ACD',
+                    backgroundColor: 'rgba(106, 90, 205, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Project Status Donut Chart
+    const projectCtx = document.getElementById('projectChart');
+    if (projectCtx) {
+        new Chart(projectCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Running', 'Completed', 'Denied'],
+                datasets: [{
+                    data: [65, 12, 23],
+                    backgroundColor: ['#F59E0B', '#3B82F6', '#EF4444'],
+                    borderWidth: 0,
+                    cutout: '70%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Daily Update Level Stacked Chart
+    const dailyCtx = document.getElementById('dailyChart');
+    if (dailyCtx) {
+        new Chart(dailyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['01/0', '07/0', '14/0', '21/0', '28/0', '04/'],
+                datasets: [
+                    {
+                        label: 'Running',
+                        data: [45, 52, 48, 55, 62, 58],
+                        backgroundColor: '#F59E0B',
+                        borderWidth: 0,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Completed',
+                        data: [25, 30, 28, 35, 40, 38],
+                        backgroundColor: '#3B82F6',
+                        borderWidth: 0,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Denied',
+                        data: [15, 18, 16, 20, 22, 20],
+                        backgroundColor: '#EF4444',
+                        borderWidth: 0,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+}
+
+function addEventListeners() {
+    // Tab functionality
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // Widget actions
+    const widgetActions = document.querySelectorAll('.widget-actions i');
+    widgetActions.forEach(action => {
+        action.addEventListener('click', function() {
+            // Add your action logic here
+            console.log('Widget action clicked:', this.className);
+        });
+    });
+
+    // Event cards
+    const eventCards = document.querySelectorAll('.event-card');
+    eventCards.forEach(card => {
+        card.addEventListener('click', function() {
+            if (this.classList.contains('add-event')) {
+                // Handle add event
+                console.log('Add new event clicked');
+            } else {
+                // Handle event selection
+                eventCards.forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+            }
+        });
+    });
+
+    // Calendar navigation
+    const calendarPrev = document.querySelector('.calendar-header .btn-icon:first-child');
+    const calendarNext = document.querySelector('.calendar-header .btn-icon:last-child');
+    
+    if (calendarPrev) {
+        calendarPrev.addEventListener('click', function() {
+            console.log('Previous month');
+        });
+    }
+    
+    if (calendarNext) {
+        calendarNext.addEventListener('click', function() {
+            console.log('Next month');
+        });
+    }
+
+    // Calendar dates
+    const calendarDates = document.querySelectorAll('.date');
+    calendarDates.forEach(date => {
+        date.addEventListener('click', function() {
+            calendarDates.forEach(d => d.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+
+    // Search functionality
+    const searchInput = document.querySelector('.search-bar input');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            console.log('Searching for:', this.value);
+        });
+    }
+
+    // Add button
+    const addBtn = document.querySelector('.btn-primary');
+    if (addBtn) {
+        addBtn.addEventListener('click', function() {
+            console.log('Add button clicked');
+        });
+    }
+
+    // Notification button
+    const notificationBtn = document.querySelector('.notification-btn');
+    if (notificationBtn) {
+        notificationBtn.addEventListener('click', function() {
+            console.log('Notifications clicked');
+        });
+    }
+
+    // View toggle
+    const viewToggle = document.querySelector('.view-toggle');
+    if (viewToggle) {
+        viewToggle.addEventListener('click', function() {
+            console.log('View toggle clicked');
+        });
+    }
+}
+
+function initializeSidebar() {
+    const sidebarToggle = document.querySelector('.sidebar-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+        });
+    }
+
+    // Navigation items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            navItems.forEach(nav => nav.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Add your navigation logic here
+            console.log('Navigating to:', this.querySelector('span').textContent);
+        });
+    });
+}
+
+// Add some interactive features
+function addHoverEffects() {
+    // Add hover effects to widgets
+    const widgets = document.querySelectorAll('.widget');
+    widgets.forEach(widget => {
+        widget.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.4)';
+        });
+        
+        widget.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)';
+        });
+    });
+}
+
+// Initialize hover effects
+addHoverEffects();
+
+// Add smooth scrolling for better UX
+document.documentElement.style.scrollBehavior = 'smooth';
+
+// Add loading animation for charts
+function addChartLoadingAnimation() {
+    const chartContainers = document.querySelectorAll('.chart-container, .mini-chart, .donut-chart, .stacked-chart');
+    chartContainers.forEach(container => {
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            container.style.transition = 'all 0.6s ease';
+            container.style.opacity = '1';
+            container.style.transform = 'translateY(0)';
+        }, Math.random() * 500);
+    });
+}
+
+// Initialize chart loading animation
+setTimeout(addChartLoadingAnimation, 100);

@@ -3,119 +3,365 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fantasy Football Roster Analyzer</title>
+    <title>Teamify - Fantasy Football Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="app">
-        <header class="header">
-            <div class="container">
-                <div class="header-content">
-                    <h1><i class="fas fa-football-ball"></i> Fantasy Roster Analyzer</h1>
-                    <div class="controls">
-                        <button id="themeToggle" class="theme-toggle" title="Toggle theme">
-                            <i class="fas fa-moon"></i>
-                        </button>
-                        <button id="refreshBtn" class="btn btn-primary">
-                            <i class="fas fa-sync-alt"></i> Refresh Data
-                        </button>
-                        <div class="league-info">
-                            <span class="league-name" id="leagueName">Loading...</span>
-                        </div>
-                    </div>
-                </div>
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <button class="sidebar-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
-        </header>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-heartbeat"></i>
+                    <span>Performance</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-folder"></i>
+                    <span>Projects</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Schedule</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="#" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </aside>
 
-        <main class="main">
-            <div class="container">
-                <div class="loading" id="loadingSpinner">
-                    <div class="spinner"></div>
-                    <p>Loading league data...</p>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Navigation -->
+            <header class="top-nav">
+                <div class="nav-left">
+                    <div class="logo">
+                        <div class="logo-icon">T</div>
+                        <span>Teamify</span>
+                    </div>
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search for Application here">
+                    </div>
+                </div>
+                <div class="nav-right">
+                    <button class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Add
+                    </button>
+                    <button class="notification-btn">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <div class="user-profile">
+                        <div class="user-info">
+                            <span class="user-name">Nicklas Larsen</span>
+                            <span class="user-role">Admin</span>
+                        </div>
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                    <button class="view-toggle active">
+                        <i class="fas fa-chart-bar"></i>
+                        Graphical View
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard">
+                <h1 class="dashboard-title">Dashboard</h1>
+                
+                <!-- Main Performance Widget -->
+                <div class="widget widget-large">
+                    <div class="widget-header">
+                        <h3>Overall Performance</h3>
+                        <div class="widget-actions">
+                            <button class="btn btn-secondary">
+                                <i class="fas fa-download"></i>
+                                Downloads Report
+                            </button>
+                            <button class="btn-icon">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="widget-tabs">
+                        <button class="tab-btn">All Time</button>
+                        <button class="tab-btn active">This Year</button>
+                        <button class="tab-btn">This Week</button>
+                        <button class="tab-btn">Today</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
                 </div>
 
-                <div class="error-message" id="errorMessage" style="display: none;">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span id="errorText"></span>
-                </div>
-
-                <div class="rosters-container" id="rostersContainer" style="display: none;">
-                                    <div class="controls-bar">
-                    <div class="team-selector">
-                        <label for="teamSelect">Teams to Display:</label>
-                        <div class="custom-select">
-                            <div class="select-trigger" id="teamSelectTrigger">
-                                <span id="teamSelectLabel">All Teams</span>
-                                <i class="fas fa-chevron-down"></i>
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="widget widget-medium">
+                        <div class="widget-header">
+                            <h3>Hours spent</h3>
+                            <div class="widget-actions">
+                                <i class="fas fa-search"></i>
+                                <i class="fas fa-ellipsis-v"></i>
                             </div>
-                            <div class="select-options" id="teamSelectOptions">
-                                <div class="select-option" data-value="all">
-                                    <input type="checkbox" id="selectAll" checked>
-                                    <label for="selectAll">All Teams</label>
-                                </div>
-                                <!-- Team options will be populated by JavaScript -->
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">7160.2 hr</span>
+                            <div class="metric-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>+3.49%</span>
+                            </div>
+                        </div>
+                        <div class="mini-chart">
+                            <canvas id="hoursChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="widget widget-medium">
+                        <div class="widget-header">
+                            <h3>Repository</h3>
+                            <div class="widget-actions">
+                                <i class="fas fa-search"></i>
+                                <i class="fas fa-ellipsis-v"></i>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">590 file</span>
+                            <div class="metric-change negative">
+                                <i class="fas fa-arrow-down"></i>
+                                <span>-0.42%</span>
+                            </div>
+                        </div>
+                        <div class="mini-chart">
+                            <canvas id="repoChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="widget widget-medium">
+                        <div class="widget-header">
+                            <h3>Project status</h3>
+                            <div class="widget-actions">
+                                <i class="fas fa-search"></i>
+                                <i class="fas fa-ellipsis-v"></i>
+                            </div>
+                        </div>
+                        <div class="donut-chart">
+                            <canvas id="projectChart"></canvas>
+                            <div class="chart-center">
+                                <span class="chart-total">25</span>
+                                <span class="chart-label">Total Project</span>
+                            </div>
+                        </div>
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <span class="legend-color running"></span>
+                                <span>Running</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color completed"></span>
+                                <span>Completed</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color denied"></span>
+                                <span>Denied</span>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="filter-buttons">
-                        <button class="filter-btn active" data-filter="all">All Positions</button>
-                        <button class="filter-btn" data-filter="starters">Starters Only</button>
-                        <button class="filter-btn" data-filter="bench">Bench Only</button>
-                    </div>
-                    
-                    <div class="projection-toggle">
-                        <label for="projectionMode">Projection Mode:</label>
-                        <select id="projectionMode">
-                            <option value="average">Average</option>
-                            <option value="week">Week 1</option>
-                            <option value="season">Season</option>
-                        </select>
-                    </div>
-                    
-                    <div class="sort-controls">
-                        <label for="sortBy">View Mode:</label>
-                        <select id="sortBy">
-                            <option value="optimal">Default (Optimal Lineup)</option>
-                            <option value="positional">Positional Comparison</option>
-                        </select>
-                    </div>
-                    
-                    <div class="team-sort-controls">
-                        <label for="teamSortBy">Sort Teams by:</label>
-                        <select id="teamSortBy">
-                            <option value="value">Total Value</option>
-                            <option value="starter-value">Starter Value</option>
-                            <option value="name">Team Name</option>
-                        </select>
-                    </div>
-                    
-                    <div class="value-normalization-toggle">
-                        <label for="valueNormalization">Value Display:</label>
-                        <select id="valueNormalization">
-                            <option value="raw">Raw Values</option>
-                            <option value="normalized">Normalized (0-100)</option>
-                        </select>
+
+                    <div class="widget widget-medium">
+                        <div class="widget-header">
+                            <h3>Daily Update level</h3>
+                            <div class="widget-actions">
+                                <i class="fas fa-search"></i>
+                                <i class="fas fa-ellipsis-v"></i>
+                            </div>
+                        </div>
+                        <div class="stacked-chart">
+                            <canvas id="dailyChart"></canvas>
+                        </div>
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <span class="legend-color running"></span>
+                                <span>Running</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color completed"></span>
+                                <span>Completed</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color denied"></span>
+                                <span>Denied</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                    
-                    <div class="rosters-grid" id="rostersGrid">
-                        <!-- Dynamic roster cards will be inserted here -->
+
+                <!-- Events Row -->
+                <div class="events-row">
+                    <div class="event-card">
+                        <i class="fas fa-clock"></i>
+                        <span>SmartFarm Call</span>
+                    </div>
+                    <div class="event-card active">
+                        <i class="fas fa-clock"></i>
+                        <span>Sales App Call</span>
+                        <div class="event-time">02:30 PM</div>
+                        <div class="event-date">Tomorrow</div>
+                    </div>
+                    <div class="event-card">
+                        <i class="fas fa-clock"></i>
+                        <span>Cara Call</span>
+                    </div>
+                    <div class="event-card add-event">
+                        <i class="fas fa-plus"></i>
+                        <span>Add New Event</span>
                     </div>
                 </div>
             </div>
         </main>
 
-        <footer class="footer">
-            <div class="container">
-                <p>
-                    Data from <a href="https://sleeper.app" target="_blank">Sleeper</a> 
-                    and <a href="https://www.fantasycalc.com" target="_blank">FantasyCalc</a>
-                </p>
+        <!-- Right Sidebar -->
+        <aside class="right-sidebar">
+            <!-- Calendar Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h3>Calendar</h3>
+                    <button class="btn-icon">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="calendar">
+                    <div class="calendar-header">
+                        <button class="btn-icon">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span class="current-month">September</span>
+                        <button class="btn-icon">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="calendar-days">
+                            <span>Mon</span>
+                            <span>Tue</span>
+                            <span>Wed</span>
+                            <span>Thu</span>
+                            <span>Fri</span>
+                            <span>Sat</span>
+                            <span>Sun</span>
+                        </div>
+                        <div class="calendar-dates">
+                            <span class="date">28</span>
+                            <span class="date">29</span>
+                            <span class="date">30</span>
+                            <span class="date">31</span>
+                            <span class="date">1</span>
+                            <span class="date">2</span>
+                            <span class="date">3</span>
+                            <span class="date">4</span>
+                            <span class="date">5</span>
+                            <span class="date">6</span>
+                            <span class="date">7</span>
+                            <span class="date">8</span>
+                            <span class="date">9</span>
+                            <span class="date">10</span>
+                            <span class="date">11</span>
+                            <span class="date">12</span>
+                            <span class="date">13</span>
+                            <span class="date">14</span>
+                            <span class="date">15</span>
+                            <span class="date">16</span>
+                            <span class="date">17</span>
+                            <span class="date">18</span>
+                            <span class="date">19</span>
+                            <span class="date">20</span>
+                            <span class="date">21</span>
+                            <span class="date">22</span>
+                            <span class="date">23</span>
+                            <span class="date">24</span>
+                            <span class="date">25</span>
+                            <span class="date">26</span>
+                            <span class="date">27</span>
+                            <span class="date">28</span>
+                            <span class="date">29</span>
+                            <span class="date">30</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </footer>
+
+            <!-- Activity Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h3>Activity</h3>
+                    <button class="btn-icon">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="activity-feed">
+                    <div class="activity-item">
+                        <div class="activity-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>Henry uploaded smartfarm file.</p>
+                            <span class="activity-time">12 min ago</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>You assigned @Ronak to do illustration of process.</p>
+                            <span class="activity-time">39 min ago</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>You have a new project coming soon!</p>
+                            <span class="activity-time">2 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>You assigned @Ronak to do illustration of process.</p>
+                            <span class="activity-time">2 hours ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
     </div>
 
     <script src="script.js"></script>
