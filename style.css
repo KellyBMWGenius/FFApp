@@ -586,12 +586,26 @@ body {
 
 /* Empty player row styling */
 .player-row.empty {
-    opacity: 0.5;
+    opacity: 0.3;
     font-style: italic;
+    background: #f8fafc;
 }
 
-.player-row.empty .player-name {
+.player-row.empty .player-name,
+.player-row.empty .player-details {
     color: #9ca3af;
+}
+
+.player-row.empty .position-badge {
+    background: #d1d5db;
+    color: #6b7280;
+}
+
+.player-row.empty .player-projection,
+.player-row.empty .player-value {
+    color: #9ca3af;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
 }
 
 /* Main content */

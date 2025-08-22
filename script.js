@@ -52,16 +52,72 @@ const formatValue = (value) => {
     return value.toLocaleString();
 };
 
-const getValueClass = (value) => {
+const getValueClass = (value, position = null) => {
     if (!value || value === 0) return 'low';
+    
+    // Position-specific thresholds
+    if (position) {
+        switch (position) {
+            case 'QB':
+                if (value >= 8000) return 'very-high';
+                if (value >= 4000) return 'high';
+                if (value >= 1500) return 'medium';
+                return 'low';
+            case 'RB':
+                if (value >= 6000) return 'very-high';
+                if (value >= 3000) return 'high';
+                if (value >= 1000) return 'medium';
+                return 'low';
+            case 'WR':
+                if (value >= 5000) return 'very-high';
+                if (value >= 2500) return 'high';
+                if (value >= 800) return 'medium';
+                return 'low';
+            case 'TE':
+                if (value >= 4000) return 'very-high';
+                if (value >= 2000) return 'high';
+                if (value >= 600) return 'medium';
+                return 'low';
+        }
+    }
+    
+    // Fallback to original thresholds
     if (value >= 4000) return 'very-high';
     if (value >= 2000) return 'high';
     if (value >= 800) return 'medium';
     return 'low';
 };
 
-const getProjectionClass = (projection) => {
+const getProjectionClass = (projection, position = null) => {
     if (!projection || projection === 0) return 'low';
+    
+    // Position-specific thresholds
+    if (position) {
+        switch (position) {
+            case 'QB':
+                if (projection >= 25) return 'very-high';
+                if (projection >= 20) return 'high';
+                if (projection >= 15) return 'medium';
+                return 'low';
+            case 'RB':
+                if (projection >= 20) return 'very-high';
+                if (projection >= 15) return 'high';
+                if (projection >= 10) return 'medium';
+                return 'low';
+            case 'WR':
+                if (projection >= 18) return 'very-high';
+                if (projection >= 14) return 'high';
+                if (projection >= 9) return 'medium';
+                return 'low';
+            case 'TE':
+                if (projection >= 15) return 'very-high';
+                if (projection >= 12) return 'high';
+                if (projection >= 8) return 'medium';
+                return 'low';
+        }
+    }
+    
+    // Fallback to original thresholds
     if (projection >= 22) return 'very-high';
     if (projection >= 16) return 'high';
     if (projection >= 10) return 'medium';
@@ -459,14 +515,37 @@ function renderRosters(rosters) {
         return;
     }
     
-    rosters.forEach((roster, index) => {
-        const card = createRosterCard(roster);
-        card.style.animationDelay = `${index * 0.1}s`;
-        container.appendChild(card);
-    });
+    // For positional view, we need to ensure all teams have the same structure
+    if (appState.viewMode === 'positional') {
+        const maxPlayersPerPosition = getMaxPlayersPerPosition(rosters);
+        rosters.forEach((roster, index) => {
+            const card = createRosterCard(roster, maxPlayersPerPosition);
+            card.style.animationDelay = `${index * 0.1}s`;
+            container.appendChild(card);
+        });
+    } else {
+        rosters.forEach((roster, index) => {
+            const card = createRosterCard(roster);
+            card.style.animationDelay = `${index * 0.1}s`;
+            container.appendChild(card);
+        });
+    }
 }
 
-function createRosterCard(roster) {
+function getMaxPlayersPerPosition(rosters) {
+    const maxCounts = { QB: 0, RB: 0, WR: 0, TE: 0 };
+    
+    rosters.forEach(roster => {
+        Object.keys(maxCounts).forEach(position => {
+            const count = (roster.organized[position] || []).length;
+            maxCounts[position] = Math.max(maxCounts[position], count);
+        });
+    });
+    
+    return maxCounts;
+}
+
+function createRosterCard(roster, maxPlayersPerPosition = null) {
     const card = document.createElement('div');
     card.className = 'roster-card';
     card.setAttribute('data-view-mode', appState.viewMode);
@@ -490,14 +569,14 @@ function createRosterCard(roster) {
             </div>
         </div>
         <div class="roster-body">
-            ${createPositionSections(roster.organized)}
+            ${createPositionSections(roster.organized, maxPlayersPerPosition)}
         </div>
     `;
     
     return card;
 }
 
-function createPositionSections(organized) {
+function createPositionSections(organized, maxPlayersPerPosition = null) {
     let html = '';
     
     if (appState.viewMode === 'positional') {
@@ -506,7 +585,9 @@ function createPositionSections(organized) {
         
         positions.forEach(position => {
             const players = organized[position] || [];
-            if (players.length > 0) {
+            const maxPlayers = maxPlayersPerPosition ? maxPlayersPerPosition[position] : players.length;
+            
+            if (maxPlayers > 0) {
                 html += '<div class="position-section">';
                 html += `<div class="position-header">${position} <span class="position-count">${players.length}</span></div>`;
                 
@@ -518,9 +599,25 @@ function createPositionSections(organized) {
                 html += '<div class="header-value">Value</div>';
                 html += '</div>';
                 
+                // Add actual players
                 players.forEach(player => {
                     html += createPlayerRow(player);
                 });
+                
+                // Add empty rows to align with teams that have more players in this position
+                for (let i = players.length; i < maxPlayers; i++) {
+                    html += `
+                        <div class="player-row empty">
+                            <div class="player-info">
+                                <div class="player-name">-</div>
+                                <div class="player-details">-</div>
+                            </div>
+                            <div class="position-badge">${position}</div>
+                            <div class="player-projection low">-</div>
+                            <div class="player-value low">-</div>
+                        </div>
+                    `;
+                }
                 
                 html += '</div>';
             }
@@ -622,8 +719,8 @@ function createPlayerRow(player) {
                 <div class="player-details">${player.team}</div>
             </div>
             <div class="position-badge">${player.position}</div>
-            <div class="player-projection ${getProjectionClass(projectionValue)}">${projectionText}</div>
-            <div class="player-value ${getValueClass(player.value)}">${formatValue(player.value)}</div>
+            <div class="player-projection ${getProjectionClass(projectionValue, player.position)}">${projectionText}</div>
+            <div class="player-value ${getValueClass(player.value, player.position)}">${formatValue(player.value)}</div>
         </div>
     `;
 }
