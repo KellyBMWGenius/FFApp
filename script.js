@@ -40,6 +40,10 @@ let appState = {
     projectionMode: 'week' // 'week', 'average', or 'season'
 };
 
+// Debug tracking for missing projections
+let missingProjections = new Set();
+let missingEspnIds = new Set();
+
 // Utility functions
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -60,6 +64,12 @@ const getProjectionClass = (projection) => {
     if (projection >= 20) return 'high';
     if (projection >= 15) return 'medium';
     return 'low';
+};
+
+// ESPN ID mapping for projections
+const findProjectionByEspnId = (sleeperId, espnIdMap, projectionData) => {
+    const espnId = espnIdMap[sleeperId];
+    return espnId ? projectionData[espnId] : null;
 };
 
 // API Functions
@@ -93,15 +103,22 @@ async function fetchFantasyCalcValues() {
         const response = await fetch(CONFIG.fantasyCalc.url);
         const data = await response.json();
         
-        // Convert to a map by sleeper ID for easy lookup
+        // Create maps for both sleeper ID and ESPN ID lookups
         const valueMap = {};
+        const espnIdMap = {};
+        
         data.forEach(player => {
             if (player.player.sleeperId) {
                 valueMap[player.player.sleeperId] = player.value;
+                
+                // Also store ESPN ID mapping if available
+                if (player.player.espnId) {
+                    espnIdMap[player.player.sleeperId] = player.player.espnId;
+                }
             }
         });
         
-        return valueMap;
+        return { valueMap, espnIdMap };
     } catch (error) {
         console.error('Error fetching FantasyCalc values:', error);
         throw new Error('Failed to fetch player values from FantasyCalc');
@@ -113,10 +130,10 @@ async function fetchProjectionData() {
         const response = await fetch('espndata/player_data.json');
         const data = await response.json();
         
-        // Convert to a map by player name for easy lookup
+        // Convert to a map by ESPN ID for perfect lookup
         const projectionMap = {};
         data.forEach(player => {
-            projectionMap[player.playerName] = {
+            projectionMap[player.playerId] = {
                 weekProjection: player.week_1_projection?.projected_points || 0,
                 seasonProjection: player.season_projection?.projected_avg_points || 0
             };
@@ -596,8 +613,9 @@ function createPositionSections(organized) {
 }
 
 function createPlayerRow(player) {
-    // Get projection data for this player
-    const projection = allData.projectionData[player.name];
+    // Get projection data for this player using ESPN ID mapping
+    const espnId = allData.espnIdMap[player.id];
+    const projection = espnId ? allData.projectionData[espnId] : null;
     let projectionValue = 0;
     let projectionText = 'N/A';
     
@@ -611,6 +629,13 @@ function createPlayerRow(player) {
         } else {
             projectionValue = projection.seasonProjection * 17;
             projectionText = projectionValue.toFixed(1);
+        }
+    } else {
+        // Track missing ESPN IDs for debugging
+        if (!espnId) {
+            missingEspnIds.add(player.id);
+        } else {
+            missingProjections.add(player.id);
         }
     }
     
@@ -709,13 +734,17 @@ function handleProjectionModeChange(event) {
 async function loadAllData() {
     showLoading();
     
+    // Clear debug data
+    missingProjections.clear();
+    missingEspnIds.clear();
+    
     try {
         // Fetch all data
         console.log('Fetching Sleeper data...');
         const sleeperData = await fetchSleeperData();
         
         console.log('Fetching FantasyCalc values...');
-        const playerValues = await fetchFantasyCalcValues();
+        const { valueMap, espnIdMap } = await fetchFantasyCalcValues();
         
         console.log('Fetching projection data...');
         const projectionData = await fetchProjectionData();
@@ -724,7 +753,8 @@ async function loadAllData() {
         allData = {
             ...allData,
             ...sleeperData,
-            playerValues,
+            playerValues: valueMap,
+            espnIdMap,
             projectionData
         };
         
@@ -739,6 +769,14 @@ async function loadAllData() {
         showRosters();
         
         console.log('Data loaded successfully');
+        
+        // Log debug info
+        if (missingProjections.size > 0) {
+            console.log('Players with ESPN IDs but missing projections:', Array.from(missingProjections));
+        }
+        if (missingEspnIds.size > 0) {
+            console.log('Players missing ESPN IDs from FantasyCalc:', Array.from(missingEspnIds));
+        }
         
     } catch (error) {
         console.error('Error loading data:', error);
@@ -757,5 +795,8 @@ window.debug = {
     allData,
     CONFIG,
     loadAllData,
-    processRosterData
+    processRosterData,
+    missingProjections,
+    missingEspnIds,
+    findProjectionByEspnId
 };
