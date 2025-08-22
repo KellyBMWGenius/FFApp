@@ -54,17 +54,17 @@ const formatValue = (value) => {
 
 const getValueClass = (value) => {
     if (!value || value === 0) return 'low';
-    if (value >= 5000) return 'very-high';
-    if (value >= 3000) return 'high';
-    if (value >= 1000) return 'medium';
+    if (value >= 4000) return 'very-high';
+    if (value >= 2000) return 'high';
+    if (value >= 800) return 'medium';
     return 'low';
 };
 
 const getProjectionClass = (projection) => {
     if (!projection || projection === 0) return 'low';
-    if (projection >= 25) return 'very-high';
-    if (projection >= 18) return 'high';
-    if (projection >= 12) return 'medium';
+    if (projection >= 22) return 'very-high';
+    if (projection >= 16) return 'high';
+    if (projection >= 10) return 'medium';
     return 'low';
 };
 
