@@ -108,11 +108,11 @@ const getValueClass = (value, position = null, isNormalized = false) => {
     if (!value || value === 0) return 'low';
     
     if (isNormalized) {
-        // Normalized value thresholds (0-100 scale)
-        if (value >= 90) return 'very-high';
-        if (value >= 75) return 'high';
-        if (value >= 50) return 'medium';
-        return 'low';
+        // Normalized value thresholds (0-100 scale) - adjusted for better distribution
+        if (value >= 85) return 'very-high';    // Top 15% of players
+        if (value >= 65) return 'high';         // Top 35% of players  
+        if (value >= 35) return 'medium';       // Top 65% of players
+        return 'low';                            // Bottom 35% of players
     }
     
     // Position-specific thresholds for raw values
