@@ -37,8 +37,41 @@ let appState = {
     viewMode: 'optimal', // 'optimal' or 'positional'
     teamSort: 'value', // 'value', 'starter-value', 'name'
     searchQuery: '',
-    projectionMode: 'average' // 'week', 'average', or 'season'
+    projectionMode: 'average', // 'week', 'average', or 'season'
+    theme: 'dark' // 'dark' or 'light'
 };
+
+// Initialize theme
+function initializeTheme() {
+    // Check for saved theme preference or default to dark
+    const savedTheme = localStorage.getItem('ffapp-theme') || 'dark';
+    appState.theme = savedTheme;
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+// Toggle theme
+function toggleTheme() {
+    const newTheme = appState.theme === 'dark' ? 'light' : 'dark';
+    appState.theme = newTheme;
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('ffapp-theme', newTheme);
+    updateThemeIcon(newTheme);
+}
+
+// Update theme icon
+function updateThemeIcon(theme) {
+    const themeToggle = document.getElementById('themeToggle');
+    const icon = themeToggle.querySelector('i');
+    
+    if (theme === 'dark') {
+        icon.className = 'fas fa-moon';
+        themeToggle.title = 'Switch to light mode';
+    } else {
+        icon.className = 'fas fa-sun';
+        themeToggle.title = 'Switch to dark mode';
+    }
+}
 
 // Debug tracking for missing projections
 let missingProjections = new Set();
@@ -749,6 +782,9 @@ function setupEventListeners() {
     
     // Projection mode dropdown
     document.getElementById('projectionMode').addEventListener('change', handleProjectionModeChange);
+
+    // Theme toggle
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 }
 
 function toggleTeamSelector() {
@@ -855,6 +891,7 @@ async function loadAllData() {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    initializeTheme(); // Initialize theme on load
     setupEventListeners();
     loadAllData();
 });
