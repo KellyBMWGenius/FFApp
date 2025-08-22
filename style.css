@@ -16,15 +16,15 @@
     --text-primary: #E0E0E0;
     --text-secondary: #A0A0A0;
     --text-muted: #B0B0B0;
-    --text-accent: #6B48FF;
+    --text-accent: #3B82F6;
     
     --border-primary: #3A3A3A;
     --border-secondary: #4A4A4A;
-    --border-accent: #6B48FF;
+    --border-accent: #3B82F6;
     
-    --accent-primary: #6B48FF;
-    --accent-secondary: #7B5AFF;
-    --accent-hover: #5A3DFF;
+    --accent-primary: #3B82F6;
+    --accent-secondary: #60A5FA;
+    --accent-hover: #2563EB;
     
     --shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
     --shadow-hover: 0px 8px 16px rgba(0, 0, 0, 0.3);
@@ -47,15 +47,15 @@
     --text-primary: #1e293b;
     --text-secondary: #475569;
     --text-muted: #64748b;
-    --text-accent: #6366f1;
+    --text-accent: #3B82F6;
     
     --border-primary: #e2e8f0;
     --border-secondary: #cbd5e1;
-    --border-accent: #6366f1;
+    --border-accent: #3B82F6;
     
-    --accent-primary: #6366f1;
-    --accent-secondary: #5855eb;
-    --accent-hover: #5855eb;
+    --accent-primary: #3B82F6;
+    --accent-secondary: #60A5FA;
+    --accent-hover: #2563EB;
     
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
@@ -105,7 +105,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    text-shadow: 0 2px 4px rgba(107, 72, 255, 0.3);
+    text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 .header h1 i {
@@ -193,12 +193,12 @@ body {
 .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid rgba(107, 72, 255, 0.2);
+    border: 3px solid rgba(59, 130, 246, 0.2);
     border-top: 3px solid var(--accent-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 1.25rem;
-    box-shadow: 0 3px 8px rgba(107, 72, 255, 0.3);
+    box-shadow: 0 3px 8px rgba(59, 130, 246, 0.3);
 }
 
 @keyframes spin {
@@ -641,7 +641,7 @@ body {
     font-weight: 600;
     text-align: center;
     min-width: 2.25rem;
-    box-shadow: 0 1px 3px rgba(107, 72, 255, 0.2);
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
 }
 
 .player-projection {
@@ -922,12 +922,12 @@ body {
 .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid rgba(107, 72, 255, 0.2);
+    border: 3px solid rgba(59, 130, 246, 0.2);
     border-top: 3px solid var(--accent-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 1.25rem;
-    box-shadow: 0 3px 8px rgba(107, 72, 255, 0.3);
+    box-shadow: 0 3px 8px rgba(59, 130, 246, 0.3);
 }
 
 @keyframes spin {
