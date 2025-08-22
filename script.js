@@ -37,7 +37,7 @@ let appState = {
     viewMode: 'optimal', // 'optimal' or 'positional'
     teamSort: 'value', // 'value', 'starter-value', 'name'
     searchQuery: '',
-    projectionMode: 'week' // 'week', 'average', or 'season'
+    projectionMode: 'average' // 'week', 'average', or 'season'
 };
 
 // Debug tracking for missing projections
@@ -426,34 +426,7 @@ function applyFiltersAndRender() {
         };
     });
     
-    // Apply search filter
-    if (appState.searchQuery) {
-        filteredRosters = filteredRosters.map(roster => {
-            const filteredPlayers = roster.players.filter(player =>
-                player.name.toLowerCase().includes(appState.searchQuery) ||
-                player.position.toLowerCase().includes(appState.searchQuery) ||
-                player.team.toLowerCase().includes(appState.searchQuery)
-            );
-            
-            if (filteredPlayers.length === 0) {
-                return null;
-            }
-            
-            // Re-organize after search filtering
-            let organized;
-            if (appState.viewMode === 'positional') {
-                organized = organizePlayersByActualPosition(filteredPlayers);
-            } else {
-                organized = organizePlayersByPosition(filteredPlayers);
-            }
-            
-            return {
-                ...roster,
-                players: filteredPlayers,
-                organized: organized
-            };
-        }).filter(roster => roster !== null);
-    }
+
     
     // Apply team sorting
     filteredRosters.sort((a, b) => {
@@ -496,6 +469,7 @@ function renderRosters(rosters) {
 function createRosterCard(roster) {
     const card = document.createElement('div');
     card.className = 'roster-card';
+    card.setAttribute('data-view-mode', appState.viewMode);
     
     card.innerHTML = `
         <div class="roster-header">
@@ -663,8 +637,7 @@ function setupEventListeners() {
     document.getElementById('teamSelectTrigger').addEventListener('click', toggleTeamSelector);
     document.addEventListener('click', closeTeamSelectorOnOutsideClick);
     
-    // Search functionality
-    document.getElementById('searchPlayers').addEventListener('input', handleSearch);
+
     
     // Filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -703,10 +676,7 @@ function setupTeamSelectorListeners() {
     });
 }
 
-function handleSearch(event) {
-    appState.searchQuery = event.target.value.toLowerCase();
-    applyFiltersAndRender();
-}
+
 
 function handleFilter(event) {
     // Update active filter button

@@ -142,7 +142,7 @@ body {
     align-items: center;
     gap: 0.5rem;
     font-size: 0.9rem;
-    min-width: 200px;
+    min-width: 300px;
 }
 
 .custom-select {
@@ -150,7 +150,7 @@ body {
     background: #0f131a;
     border: 1px solid #2a2f3a;
     border-radius: 6px;
-    min-width: 180px;
+    min-width: 280px;
 }
 
 .select-trigger {
@@ -225,36 +225,7 @@ body {
     font-weight: 500;
 }
 
-.search-box {
-    position: relative;
-    flex: 1;
-    min-width: 250px;
-}
 
-.search-box input {
-    width: 100%;
-    padding: 0.75rem 2.5rem 0.75rem 1rem;
-    background: #0f131a;
-    border: 1px solid #2a2f3a;
-    border-radius: 6px;
-    color: #e8eaf0;
-    font-size: 0.9rem;
-    transition: border-color 0.2s ease;
-}
-
-.search-box input:focus {
-    outline: none;
-    border-color: #4f9cff;
-    box-shadow: 0 0 0 3px rgba(79, 156, 255, 0.1);
-}
-
-.search-box i {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #666;
-}
 
 .filter-buttons {
     display: flex;
@@ -717,4 +688,51 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Positional comparison view - ensure position groups align across rosters */
+.roster-card[data-view-mode="positional"] .position-section {
+    margin-bottom: 1.5rem;
+}
+
+.roster-card[data-view-mode="positional"] .position-header {
+    background: rgba(42, 47, 58, 0.4);
+    padding: 0.75rem 1rem;
+    border-radius: 6px 6px 0 0;
+    border-bottom: 2px solid #4f9cff;
+    font-weight: 600;
+    color: #e8eaf0;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Ensure consistent column widths across all roster cards */
+.roster-card[data-view-mode="positional"] .column-headers,
+.roster-card[data-view-mode="positional"] .player-row {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 0.75rem;
+}
+
+/* Make position badges consistent width */
+.roster-card[data-view-mode="positional"] .position-badge {
+    min-width: 3rem;
+    text-align: center;
+}
+
+/* Ensure projection and value columns are consistent width */
+.roster-card[data-view-mode="positional"] .player-projection,
+.roster-card[data-view-mode="positional"] .player-value {
+    min-width: 4rem;
+    text-align: center;
+}
+
+/* Empty player row styling */
+.player-row.empty {
+    opacity: 0.5;
+    font-style: italic;
+}
+
+.player-row.empty .player-name {
+    color: #666;
 }
