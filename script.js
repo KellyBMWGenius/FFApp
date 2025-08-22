@@ -517,6 +517,14 @@ function createPositionSections(organized) {
                 html += '<div class="position-section">';
                 html += `<div class="position-header">${position} <span class="position-count">${players.length}</span></div>`;
                 
+                // Add column headers
+                html += '<div class="column-headers">';
+                html += '<div class="header-player">Player</div>';
+                html += '<div class="header-position">Position</div>';
+                html += '<div class="header-projection">Projection</div>';
+                html += '<div class="header-value">Value</div>';
+                html += '</div>';
+                
                 players.forEach(player => {
                     html += createPlayerRow(player);
                 });
@@ -528,6 +536,14 @@ function createPositionSections(organized) {
         // Optimal lineup view (default)
         html += '<div class="position-section">';
         html += '<div class="position-header">STARTERS <span class="position-count">10</span></div>';
+        
+        // Add column headers
+        html += '<div class="column-headers">';
+        html += '<div class="header-player">Player</div>';
+        html += '<div class="header-position">Position</div>';
+        html += '<div class="header-projection">Projection</div>';
+        html += '<div class="header-value">Value</div>';
+        html += '</div>';
         
         CONFIG.positions.starters.forEach(positionDef => {
             const players = organized.starters[positionDef.name] || [];
@@ -559,6 +575,14 @@ function createPositionSections(organized) {
         if (organized.bench && organized.bench.length > 0) {
             html += '<div class="position-section">';
             html += `<div class="position-header">BENCH <span class="position-count">${organized.bench.length}</span></div>`;
+            
+            // Add column headers
+            html += '<div class="column-headers">';
+            html += '<div class="header-player">Player</div>';
+            html += '<div class="header-position">Position</div>';
+            html += '<div class="header-projection">Projection</div>';
+            html += '<div class="header-value">Value</div>';
+            html += '</div>';
             
             organized.bench.forEach(player => {
                 html += createPlayerRow(player);
@@ -594,7 +618,7 @@ function createPlayerRow(player) {
         <div class="player-row">
             <div class="player-info">
                 <div class="player-name">${player.name}</div>
-                <div class="player-details">${player.position} • ${player.team}</div>
+                <div class="player-details">${player.team}</div>
             </div>
             <div class="position-badge">${player.position}</div>
             <div class="player-projection ${getProjectionClass(projectionValue)}">${projectionText}</div>
