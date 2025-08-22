@@ -37,7 +37,7 @@ let appState = {
     viewMode: 'optimal', // 'optimal' or 'positional'
     teamSort: 'value', // 'value', 'starter-value', 'name'
     searchQuery: '',
-    projectionMode: 'week' // 'week' or 'season'
+    projectionMode: 'week' // 'week', 'average', or 'season'
 };
 
 // Utility functions
@@ -580,6 +580,9 @@ function createPlayerRow(player) {
     if (projection) {
         if (appState.projectionMode === 'week') {
             projectionValue = projection.weekProjection;
+            projectionText = projectionValue.toFixed(1);
+        } else if (appState.projectionMode === 'average') {
+            projectionValue = projection.seasonProjection;
             projectionText = projectionValue.toFixed(1);
         } else {
             projectionValue = projection.seasonProjection * 17;
