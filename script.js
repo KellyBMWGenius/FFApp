@@ -1429,8 +1429,7 @@ function createTradePlayerRow(player, rosterId) {
     <div class="trade-player-row" data-player-id="${player.id}" data-roster-id="${rosterId}">
         <input type="checkbox" id="trade-${rosterId}-${player.id}">
         <div class="player-info">
-            <div class="player-name">${player.name}</div>
-            <div class="player-details">${player.team || 'FA'}</div>
+            <div class="player-name">${player.name} <span class="player-team">${player.team || 'FA'}</span></div>
         </div>
         <div class="position-badge">${player.position}</div>
         <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
