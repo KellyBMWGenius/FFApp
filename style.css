@@ -850,12 +850,13 @@ body {
     border-radius: 4px;
     min-width: 3.5rem;
     font-size: 0.8rem;
+    color: var(--text-primary);
 }
 
-.player-value.very-high { color: #059669; }
-.player-value.high { color: #16a34a; }
-.player-value.medium { color: #ca8a04; }
-.player-value.low { color: #dc2626; }
+.player-value.very-high { color: #059669 !important; }
+.player-value.high { color: #16a34a !important; }
+.player-value.medium { color: #ca8a04 !important; }
+.player-value.low { color: #dc2626 !important; }
 
 /* Positional comparison view */
 .roster-card[data-view-mode="positional"] .position-section { 
@@ -918,9 +919,10 @@ body {
     text-align: center;
     color: white;
 }
-.position-score.score-good { background: #10b981; }
-.position-score.score-average { background: #f59e0b; }
-.position-score.score-poor { background: #ef4444; }
+.position-score.score-excellent { background: #10b981; color: white; }
+.position-score.score-good { background: #16a34a; color: white; }
+.position-score.score-average { background: #ca8a04; color: white; }
+.position-score.score-poor { background: #dc2626; color: white; }
 
 .scoring-explanation {
     background: var(--bg-tertiary);
@@ -1528,23 +1530,23 @@ body {
 }
 
 .trade-player-list .position-score.score-excellent {
-    background: var(--success-bg);
-    color: var(--success-text);
+    background: #10b981;
+    color: white;
 }
 
 .trade-player-list .position-score.score-good {
-    background: var(--warning-bg);
-    color: var(--warning-text);
+    background: #16a34a;
+    color: white;
 }
 
 .trade-player-list .position-score.score-average {
-    background: var(--info-bg);
-    color: var(--info-text);
+    background: #ca8a04;
+    color: white;
 }
 
 .trade-player-list .position-score.score-poor {
-    background: var(--error-bg);
-    color: var(--error-text);
+    background: #dc2626;
+    color: white;
 }
 
 .trade-player-list .column-headers {
