@@ -73,7 +73,22 @@
                         <!-- Spacer to push subsequent items to the right -->
                         <div class="spacer"></div>
 
-                        <!-- Group 3: Team Sorting -->
+                        <!-- Group 3: View Mode -->
+                        <div class="control-item">
+                            <label for="sortBy">View Mode:</label>
+                            <div class="custom-select">
+                                <div class="select-trigger" id="sortByTrigger">
+                                    <span id="sortByLabel">Default (Optimal Lineup)</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="select-options" id="sortByOptions">
+                                    <div class="select-option" data-value="optimal">Default (Optimal Lineup)</div>
+                                    <div class="select-option" data-value="positional">Positional Comparison</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Group 4: Team Sorting -->
                         <div class="control-item">
                             <label for="teamSortBy">Sort Teams:</label>
                             <div class="custom-select">
@@ -84,6 +99,7 @@
                                 <div class="select-options" id="teamSortByOptions">
                                     <div class="select-option" data-value="value">Total Value</div>
                                     <div class="select-option" data-value="starter-value">Starter Value</div>
+                                    <div class="select-option" data-value="positional-score">Positional Score</div>
                                     <div class="select-option" data-value="name">Team Name</div>
                                 </div>
                             </div>
@@ -98,6 +114,11 @@
                                 Display Options
                             </button>
 
+                            <!-- Horizontal View Toggle -->
+                            <button class="horizontal-view-btn" id="horizontalViewBtn" title="Toggle horizontal view for side-by-side roster comparison (Ctrl+H)">
+                                <i class="fas fa-arrows-alt-h"></i>
+                                <span>Horizontal View</span>
+                            </button>
                         </div>
                     </header>
                     
@@ -118,19 +139,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="control-item">
-                                <label for="sortBy">View Mode:</label>
-                                <div class="custom-select">
-                                    <div class="select-trigger" id="sortByTrigger">
-                                        <span id="sortByLabel">Default (Optimal Lineup)</span>
-                                        <i class="fas fa-chevron-down"></i>
-                                    </div>
-                                    <div class="select-options" id="sortByOptions">
-                                        <div class="select-option" data-value="optimal">Default (Optimal Lineup)</div>
-                                        <div class="select-option" data-value="positional">Positional Comparison</div>
-                                    </div>
-                                </div>
-                            </div>
+
                             <div class="control-item">
                                 <label for="valueNormalization">Value Display:</label>
                                 <div class="custom-select">
@@ -143,6 +152,29 @@
                                         <div class="select-option" data-value="normalized">Normalized (0-100)</div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Horizontal View Help Section -->
+                    <div class="horizontal-view-help" id="horizontalViewHelp">
+                        <h4>Keyboard Shortcuts for Horizontal View</h4>
+                        <div class="shortcuts">
+                            <div class="shortcut-item">
+                                <span class="shortcut-key">Ctrl+H</span>
+                                <span>Toggle horizontal view</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <span class="shortcut-key">← →</span>
+                                <span>Scroll left/right by one team</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <span class="shortcut-key">Home</span>
+                                <span>Scroll to first team</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <span class="shortcut-key">End</span>
+                                <span>Scroll to last team</span>
                             </div>
                         </div>
                     </div>

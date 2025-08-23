@@ -39,7 +39,8 @@ let appState = {
     searchQuery: '',
     projectionMode: 'average', // 'week', 'average', or 'season'
     valueNormalization: 'raw', // 'raw' or 'normalized'
-    theme: 'dark' // 'dark' or 'light'
+    theme: 'dark', // 'dark' or 'light'
+    horizontalView: false // 'false' for vertical grid, 'true' for horizontal scroll
 };
 
 // Initialize theme
@@ -51,6 +52,31 @@ function initializeTheme() {
     updateThemeIcon(savedTheme);
 }
 
+// Initialize horizontal view
+function initializeHorizontalView() {
+    // Check for saved horizontal view preference or default to false
+    const savedHorizontalView = localStorage.getItem('ffapp-horizontal-view') === 'true';
+    appState.horizontalView = savedHorizontalView;
+    
+    if (savedHorizontalView) {
+        const rostersContainer = document.getElementById('rostersContainer');
+        const horizontalViewBtn = document.getElementById('horizontalViewBtn');
+        
+        if (rostersContainer && horizontalViewBtn) {
+            rostersContainer.classList.add('horizontal-view');
+            horizontalViewBtn.classList.add('active');
+            horizontalViewBtn.innerHTML = '<i class="fas fa-th"></i><span>Grid View</span>';
+            horizontalViewBtn.title = 'Switch to vertical grid view';
+            
+            // Set team count indicator if data is available
+            if (allData.processedRosters && allData.processedRosters.length > 0) {
+                const teamCount = allData.processedRosters.length;
+                rostersContainer.setAttribute('data-team-count', `${teamCount} Teams - Use arrow keys or scroll to navigate`);
+            }
+        }
+    }
+}
+
 // Toggle theme
 function toggleTheme() {
     const newTheme = appState.theme === 'dark' ? 'light' : 'dark';
@@ -58,6 +84,36 @@ function toggleTheme() {
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('ffapp-theme', newTheme);
     updateThemeIcon(newTheme);
+}
+
+// Toggle horizontal view
+function toggleHorizontalView() {
+    appState.horizontalView = !appState.horizontalView;
+    
+    const rostersContainer = document.getElementById('rostersContainer');
+    const horizontalViewBtn = document.getElementById('horizontalViewBtn');
+    
+    if (appState.horizontalView) {
+        rostersContainer.classList.add('horizontal-view');
+        horizontalViewBtn.classList.add('active');
+        horizontalViewBtn.innerHTML = '<i class="fas fa-th"></i><span>Grid View</span>';
+        horizontalViewBtn.title = 'Switch to vertical grid view';
+        
+        // Add team count indicator
+        const teamCount = allData.processedRosters.length;
+        rostersContainer.setAttribute('data-team-count', `${teamCount} Teams - Use arrow keys or scroll to navigate`);
+    } else {
+        rostersContainer.classList.remove('horizontal-view');
+        horizontalViewBtn.classList.remove('active');
+        horizontalViewBtn.innerHTML = '<i class="fas fa-arrows-alt-h"></i><span>Horizontal View</span>';
+        horizontalViewBtn.title = 'Toggle horizontal view for side-by-side roster comparison';
+        
+        // Remove team count indicator
+        rostersContainer.removeAttribute('data-team-count');
+    }
+    
+    // Save preference to localStorage
+    localStorage.setItem('ffapp-horizontal-view', appState.horizontalView);
 }
 
 // Update theme icon
@@ -348,6 +404,9 @@ function processRosterData() {
         // Organize into positions
         const organizedRoster = organizePlayersByPosition(rosterPlayers);
         
+        // Also organize by actual position for positional scoring
+        const actualPositionRoster = organizePlayersByActualPosition(rosterPlayers);
+        
         // Calculate total values using raw values for consistency
         const totalValue = rosterPlayers.reduce((sum, player) => sum + player.rawValue, 0);
         const starterValue = rosterPlayers
@@ -367,17 +426,22 @@ function processRosterData() {
             }
         });
         
+        // Calculate positional scores
+        const positionalScores = calculatePositionalScores(actualPositionRoster);
+        
         processedRosters.push({
             rosterId: roster.roster_id,
             teamName,
             user,
             players: rosterPlayers,
             organized: organizedRoster,
+            actualPositionOrganized: actualPositionRoster,
             stats: {
                 totalValue,
                 starterValue,
                 totalWeeklyPoints,
-                starterCount: starterPlayers.length
+                starterCount: starterPlayers.length,
+                positionalScores
             }
         });
     });
@@ -450,6 +514,215 @@ function organizePlayersByActualPosition(players) {
     
     return organized;
 }
+
+// Calculate positional scores for each position group
+function calculatePositionalScores(organizedPlayers) {
+    const scores = {};
+    
+    // Define scoring weights for each position
+    const positionWeights = {
+        QB: {
+            starters: 2, // Superflex league - need 2 QBs
+            flexWeight: 0.6, // Good backup QB is valuable but not as much as starters
+            depthWeight: 0.2 // Additional depth beyond flex
+        },
+        RB: {
+            starters: 2, // Need 2 starting RBs
+            flexWeight: 0.7, // Good 3rd/4th RB is valuable for flex
+            depthWeight: 0.3 // Additional depth is valuable
+        },
+        WR: {
+            starters: 3, // Need 3 starting WRs
+            flexWeight: 0.65, // Good 4th/5th WR is valuable for flex
+            depthWeight: 0.25 // Additional depth is valuable
+        },
+        TE: {
+            starters: 1, // Need 1 starting TE
+            flexWeight: 0.5, // Good backup TE is valuable
+            depthWeight: 0.15 // Additional depth less valuable
+        }
+    };
+    
+    Object.keys(organizedPlayers).forEach(position => {
+        const players = organizedPlayers[position] || [];
+        const weights = positionWeights[position];
+        
+        if (players.length === 0) {
+            scores[position] = {
+                raw: 0,
+                normalized: 0,
+                playerCount: 0
+            };
+            return;
+        }
+        
+        let score = 0;
+        
+        // Score starters (full weight)
+        for (let i = 0; i < Math.min(weights.starters, players.length); i++) {
+            score += players[i].rawValue;
+        }
+        
+        // Score flex players (reduced weight but still significant)
+        for (let i = weights.starters; i < Math.min(weights.starters + 2, players.length); i++) {
+            score += players[i].rawValue * weights.flexWeight;
+        }
+        
+        // Score additional depth (reduced weight)
+        for (let i = weights.starters + 2; i < players.length; i++) {
+            score += players[i].rawValue * weights.depthWeight;
+        }
+        
+        // Use the existing normalized values from the app (0-100 scale)
+        // Get the maximum player value for normalization (same as used in the UI)
+        const maxPlayerValue = getMaxPlayerValue(allData.playerValues);
+        
+        let normalizedScore = 0;
+        
+        // Score starters (full weight)
+        for (let i = 0; i < Math.min(weights.starters, players.length); i++) {
+            normalizedScore += normalizeValue(players[i].rawValue, maxPlayerValue);
+        }
+        
+        // Score flex players (reduced weight but still significant)
+        for (let i = weights.starters; i < Math.min(weights.starters + 2, players.length); i++) {
+            normalizedScore += normalizeValue(players[i].rawValue, maxPlayerValue) * weights.flexWeight;
+        }
+        
+        // Score additional depth (reduced weight)
+        for (let i = weights.starters + 2; i < players.length; i++) {
+            normalizedScore += normalizeValue(players[i].rawValue, maxPlayerValue) * weights.depthWeight;
+        }
+        
+        // The normalized score is already on a 0-100 scale, just round it
+        const finalScore = Math.round(normalizedScore);
+        
+        // Debug logging
+        console.log(`${position} Position Score:`, {
+            rawScore: score,
+            normalizedScore: finalScore,
+            playerCount: players.length,
+            topPlayers: players.slice(0, 3).map(p => ({ 
+                name: p.name, 
+                rawValue: p.rawValue,
+                normalizedValue: normalizeValue(p.rawValue, maxPlayerValue)
+            }))
+        });
+        
+        scores[position] = {
+            raw: score,
+            normalized: finalScore,
+            playerCount: players.length
+        };
+    });
+    
+    return scores;
+}
+
+
+
+// Calculate overall positional score from individual position scores
+function calculateOverallPositionalScore(positionalScores) {
+    const positions = ['QB', 'RB', 'WR', 'TE'];
+    let totalScore = 0;
+    let validPositions = 0;
+    
+    positions.forEach(position => {
+        if (positionalScores[position] && typeof positionalScores[position].normalized === 'number') {
+            totalScore += positionalScores[position].normalized;
+            validPositions++;
+        }
+    });
+    
+    if (validPositions === 0) return 0;
+    
+    const averageScore = totalScore / validPositions;
+    const roundedScore = Math.round(averageScore);
+    
+    // Debug logging for overall score
+    console.log('Overall Positional Score Calculation:', {
+        individualScores: positions.map(pos => ({
+            position: pos,
+            score: positionalScores[pos] ? positionalScores[pos].normalized : 'N/A'
+        })),
+        totalScore,
+        validPositions,
+        averageScore,
+        roundedScore
+    });
+    
+    return roundedScore;
+}
+
+// Get CSS class for positional score based on value and position
+function getScoreClass(score, position = null, allPositionalScores = null) {
+    // Ensure we have a valid score
+    if (score === null || score === undefined || score === 0) {
+        return 'poor';
+    }
+    
+    // If we have all positional scores for comparison, use relative thresholds
+    if (allPositionalScores && position) {
+        const positionScores = allPositionalScores
+            .map(roster => roster.stats.positionalScores?.[position]?.normalized)
+            .filter(score => score !== null && score !== undefined)
+            .sort((a, b) => a - b);
+        
+        if (positionScores.length > 0) {
+            const sortedScores = positionScores.sort((a, b) => a - b);
+            const totalScores = sortedScores.length;
+            
+            // Find the score's percentile rank
+            const scoreIndex = sortedScores.findIndex(s => s >= score);
+            const percentile = scoreIndex >= 0 ? (scoreIndex / totalScores) * 100 : 0;
+            
+            // Use percentile-based thresholds for relative scoring
+            // For a 10-team league: roughly top 3 green, middle 4 yellow, bottom 3 red
+            if (percentile >= 70) return 'good';      // Top 30% - Green (top 3 teams)
+            if (percentile >= 30) return 'average';   // Middle 40% - Yellow (teams 4-7)
+            return 'poor';                             // Bottom 30% - Red (teams 8-10)
+        }
+    }
+    
+    // Fallback to position-specific fixed thresholds if no comparison data
+    if (position) {
+        switch (position) {
+            case 'QB':
+                // QB scores tend to be higher due to superflex importance
+                if (score >= 60) return 'good';      // Top 40% - Green
+                if (score >= 35) return 'average';   // Middle 25% - Yellow  
+                return 'poor';                        // Bottom 35% - Red
+                
+            case 'RB':
+                // RB scores are typically moderate due to depth
+                if (score >= 55) return 'good';      // Top 45% - Green
+                if (score >= 30) return 'average';   // Middle 25% - Yellow
+                return 'poor';                        // Bottom 30% - Red
+                
+            case 'WR':
+                // WR scores are typically moderate due to depth
+                if (score >= 55) return 'good';      // Top 45% - Green
+                if (score >= 30) return 'average';   // Middle 25% - Yellow
+                return 'poor';                        // Bottom 30% - Red
+                
+            case 'TE':
+                // TE scores are typically lower due to scarcity
+                if (score >= 50) return 'good';      // Top 50% - Green
+                if (score >= 25) return 'average';   // Middle 25% - Yellow
+                return 'poor';                        // Bottom 25% - Red
+                
+            default:
+                break;
+        }
+    }
+    
+    // Fallback to general thresholds if no position specified
+    if (score >= 55) return 'good';      // Top 45% - Green
+    if (score >= 30) return 'average';   // Middle 30% - Yellow
+    return 'poor';                        // Bottom 40% - Red
+}
+
+
 
 // UI Functions
 function showLoading() {
@@ -570,12 +843,80 @@ function handleTeamSelection(rosterId, isChecked) {
             // Always remove 'all' when deselecting individual teams
             appState.selectedTeams.delete('all');
         }
+        
+        // Auto-scroll to selected team in horizontal view
+        if (appState.horizontalView && isChecked && rosterId !== 'all') {
+            scrollToTeam(rosterId);
+        }
     }
     
     // Synchronize all checkbox states with the app state
     synchronizeCheckboxStates();
     updateTeamSelectorLabel();
     applyFiltersAndRender();
+}
+
+// Scroll to a specific team in horizontal view
+function scrollToTeam(rosterId) {
+    if (!appState.horizontalView) return;
+    
+    const rostersGrid = document.getElementById('rostersGrid');
+    const teamCard = rostersGrid.querySelector(`[data-roster-id="${rosterId}"]`);
+    
+    if (teamCard) {
+        const containerRect = rostersGrid.getBoundingClientRect();
+        const cardRect = teamCard.getBoundingClientRect();
+        const scrollLeft = rostersGrid.scrollLeft;
+        
+        // Calculate the position to scroll to center the team card
+        const targetScrollLeft = scrollLeft + cardRect.left - containerRect.left - (containerRect.width / 2) + (cardRect.width / 2);
+        
+        rostersGrid.scrollTo({
+            left: targetScrollLeft,
+            behavior: 'smooth'
+        });
+    }
+}
+
+// Update scroll position indicator
+function updateScrollPositionIndicator() {
+    if (!appState.horizontalView) return;
+    
+    const rostersGrid = document.getElementById('rostersGrid');
+    const rosterCards = rostersGrid.querySelectorAll('.roster-card');
+    
+    if (rosterCards.length === 0) return;
+    
+    const containerRect = rostersGrid.getBoundingClientRect();
+    const scrollLeft = rostersGrid.scrollLeft;
+    
+    // Find which teams are currently visible
+    const visibleTeams = [];
+    rosterCards.forEach(card => {
+        const cardRect = card.getBoundingClientRect();
+        const cardLeft = cardRect.left - containerRect.left + scrollLeft;
+        const cardRight = cardLeft + cardRect.width;
+        
+        // Check if card is at least partially visible
+        if (cardRight > scrollLeft && cardLeft < scrollLeft + containerRect.width) {
+            const rosterId = card.getAttribute('data-roster-id');
+            const teamName = card.querySelector('.roster-header h3').textContent;
+            visibleTeams.push({ rosterId, teamName });
+        }
+    });
+    
+    // Update the team count indicator with visible teams info
+    if (visibleTeams.length > 0) {
+        const rostersContainer = document.getElementById('rostersContainer');
+        const totalTeams = allData.processedRosters.length;
+        const visibleCount = visibleTeams.length;
+        
+        if (visibleCount === totalTeams) {
+            rostersContainer.setAttribute('data-team-count', `${totalTeams} Teams - All teams visible`);
+        } else {
+            rostersContainer.setAttribute('data-team-count', `${visibleCount}/${totalTeams} Teams visible - Scroll to see more`);
+        }
+    }
 }
 
 function synchronizeCheckboxStates() {
@@ -641,6 +982,13 @@ function applyFiltersAndRender() {
                 return b.stats.totalValue - a.stats.totalValue;
             case 'starter-value':
                 return b.stats.starterValue - a.stats.starterValue;
+            case 'positional-score':
+                if (appState.viewMode === 'positional' && a.stats.positionalScores && b.stats.positionalScores) {
+                    const scoreA = calculateOverallPositionalScore(a.stats.positionalScores);
+                    const scoreB = calculateOverallPositionalScore(b.stats.positionalScores);
+                    return scoreB - scoreA;
+                }
+                return b.stats.totalValue - a.stats.totalValue;
             case 'name':
                 return a.teamName.localeCompare(b.teamName);
             default:
@@ -670,12 +1018,14 @@ function renderRosters(rosters) {
         const maxPlayersPerPosition = getMaxPlayersPerPosition(rosters);
         rosters.forEach((roster, index) => {
             const card = createRosterCard(roster, maxPlayersPerPosition);
+            card.setAttribute('data-roster-id', roster.rosterId); // Add data attribute for scrolling
             card.style.animationDelay = `${index * 0.1}s`;
             container.appendChild(card);
         });
     } else {
         rosters.forEach((roster, index) => {
             const card = createRosterCard(roster);
+            card.setAttribute('data-roster-id', roster.rosterId); // Add data attribute for scrolling
             card.style.animationDelay = `${index * 0.1}s`;
             container.appendChild(card);
         });
@@ -716,30 +1066,76 @@ function createRosterCard(roster, maxPlayersPerPosition = null) {
                     <div class="stat-value">${roster.stats.totalWeeklyPoints.toFixed(1)}</div>
                     <div>Total Weekly Points</div>
                 </div>
+                ${appState.viewMode === 'positional' && roster.stats.positionalScores ? `
+                <div class="stat">
+                    <div class="stat-value">${calculateOverallPositionalScore(roster.stats.positionalScores)}</div>
+                    <div>Positional Score</div>
+                </div>
+                ` : ''}
             </div>
         </div>
         <div class="roster-body">
-            ${createPositionSections(roster.organized, maxPlayersPerPosition)}
+            ${createPositionSections(roster, maxPlayersPerPosition)}
         </div>
     `;
     
     return card;
 }
 
-function createPositionSections(organized, maxPlayersPerPosition = null) {
+function createPositionSections(roster, maxPlayersPerPosition = null) {
     let html = '';
     
     if (appState.viewMode === 'positional') {
         // Positional comparison view
         const positions = ['QB', 'RB', 'WR', 'TE'];
+        const organized = roster.actualPositionOrganized || {};
+        const positionalScores = roster.stats.positionalScores || {};
+        
+        // Add scoring explanation
+        html += '<div class="scoring-explanation">';
+        html += '<div class="explanation-text">Positional scores (0-100) weight starters highest, then flex depth, then additional depth</div>';
+        html += '</div>';
+        
+        // Add positional scores summary table
+        html += '<div class="positional-scores-summary">';
+        html += '<div class="summary-header">Positional Scores Summary</div>';
+        html += '<div class="summary-table">';
+        html += '<div class="summary-row header">';
+        html += '<div class="summary-cell">Position</div>';
+        html += '<div class="summary-cell">Score</div>';
+        html += '<div class="summary-cell">Players</div>';
+        html += '</div>';
+        
+        positions.forEach(pos => {
+            const posScore = positionalScores[pos];
+            if (posScore) {
+                html += `<div class="summary-row">
+                    <div class="summary-cell position-name">${pos}</div>
+                    <div class="summary-cell">
+                        <span class="position-score score-${getScoreClass(posScore.normalized, pos, allData.processedRosters)}">${posScore.normalized}</span>
+                    </div>
+                    <div class="summary-cell">${posScore.playerCount}</div>
+                </div>`;
+            }
+        });
+        
+        html += '</div></div>';
         
         positions.forEach(position => {
             const players = organized[position] || [];
             const maxPlayers = maxPlayersPerPosition ? maxPlayersPerPosition[position] : players.length;
+            const positionScore = positionalScores[position];
             
             if (maxPlayers > 0) {
                 html += '<div class="position-section">';
-                html += `<div class="position-header">${position} <span class="position-count">${players.length}</span></div>`;
+
+                
+                html += `<div class="position-header">
+                    ${position} 
+                    <span class="position-count">${players.length}</span>
+                    ${positionScore ? `<span class="position-score score-${getScoreClass(positionScore.normalized, position, allData.processedRosters)}" title="Positional Score: ${positionScore.normalized}/100 - Based on starter quality, flex depth, and overall depth">${positionScore.normalized}</span>` : ''}
+                    ${!positionScore ? `<span class="position-score score-poor" title="No positional score available">N/A</span>` : ''}
+                </div>`;
                 
                 // Add column headers
                 html += '<div class="column-headers">';
@@ -774,6 +1170,7 @@ function createPositionSections(organized, maxPlayersPerPosition = null) {
         });
     } else {
         // Optimal lineup view (default)
+        const organized = roster.organized || {};
         html += '<div class="position-section">';
         html += '<div class="position-header">STARTERS <span class="position-count">10</span></div>';
         
@@ -923,6 +1320,19 @@ function setupEventListeners() {
 
     // Theme toggle
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    
+    // Horizontal view toggle
+    document.getElementById('horizontalViewBtn').addEventListener('click', toggleHorizontalView);
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+    
+    // Add scroll listener for horizontal view position indicator
+    document.addEventListener('scroll', function(event) {
+        if (appState.horizontalView && event.target.id === 'rostersGrid') {
+            updateScrollPositionIndicator();
+        }
+    }, { passive: true });
 }
 
 function toggleTeamSelector() {
@@ -1134,6 +1544,56 @@ function setupCustomDropdowns() {
     });
 }
 
+// Handle keyboard shortcuts
+function handleKeyboardShortcuts(event) {
+    // Only handle shortcuts when not typing in input fields
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        return;
+    }
+    
+    // Ctrl/Cmd + H to toggle horizontal view
+    if ((event.ctrlKey || event.metaKey) && event.key === 'h') {
+        event.preventDefault();
+        toggleHorizontalView();
+    }
+    
+    // Left/Right arrow keys to scroll horizontally when in horizontal view
+    if (appState.horizontalView && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+        event.preventDefault();
+        const rostersGrid = document.getElementById('rostersGrid');
+        const scrollAmount = 400; // Scroll by one roster card width
+        
+        if (event.key === 'ArrowLeft') {
+            rostersGrid.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        } else {
+            rostersGrid.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    }
+    
+    // Home/End keys to scroll to start/end when in horizontal view
+    if (appState.horizontalView && (event.key === 'Home' || event.key === 'End')) {
+        event.preventDefault();
+        const rostersGrid = document.getElementById('rostersGrid');
+        
+        if (event.key === 'Home') {
+            rostersGrid.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+            rostersGrid.scrollTo({ left: rostersGrid.scrollWidth, behavior: 'smooth' });
+        }
+    }
+}
+
+// Update team count indicator for horizontal view
+function updateTeamCountIndicator() {
+    if (appState.horizontalView && allData.processedRosters) {
+        const rostersContainer = document.getElementById('rostersContainer');
+        if (rostersContainer) {
+            const teamCount = allData.processedRosters.length;
+            rostersContainer.setAttribute('data-team-count', `${teamCount} Teams - Use arrow keys or scroll to navigate`);
+        }
+    }
+}
+
 // Main initialization
 async function loadAllData() {
     showLoading();
@@ -1171,6 +1631,7 @@ async function loadAllData() {
         setupTeamSelectorListeners();
         applyFiltersAndRender();
         showRosters();
+        updateTeamCountIndicator(); // Call the new function here
         
         console.log('Data loaded successfully');
         
@@ -1191,6 +1652,7 @@ async function loadAllData() {
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     initializeTheme(); // Initialize theme on load
+    initializeHorizontalView(); // Initialize horizontal view on load
     setupEventListeners();
     loadAllData();
 });

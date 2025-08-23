@@ -814,6 +814,95 @@ body {
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.position-score {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    min-width: 2rem;
+    text-align: center;
+    color: white;
+}
+
+.position-score.score-good {
+    background: #10b981; /* Green */
+}
+
+.position-score.score-average {
+    background: #f59e0b; /* Yellow */
+}
+
+.position-score.score-poor {
+    background: #ef4444; /* Red */
+}
+
+.scoring-explanation {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.explanation-text {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.positional-scores-summary {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.summary-header {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.summary-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.summary-row.header {
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-primary);
+    padding-bottom: 0.5rem;
+}
+
+.summary-row {
+    display: contents;
+}
+
+.summary-cell {
+    padding: 0.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.summary-cell.position-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.summary-cell .position-score {
+    display: inline-block;
+    min-width: 2.5rem;
 }
 
 /* Ensure consistent column widths across all roster cards */
@@ -1053,4 +1142,278 @@ body {
 /* Remove complex fade-in animations */
 .roster-card {
     opacity: 1;
+}
+
+/* Display options container */
+.display-options-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.display-options-btn,
+.horizontal-view-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+}
+
+.display-options-btn:hover,
+.horizontal-view-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+    transform: translateY(-1px);
+}
+
+.display-options-btn.active,
+.horizontal-view-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.horizontal-view-btn i {
+    font-size: 1rem;
+    color: var(--accent-primary);
+    transition: color 0.3s ease;
+}
+
+.horizontal-view-btn.active i {
+    color: white;
+}
+
+/* Horizontal view styles */
+.rosters-container.horizontal-view .rosters-grid {
+    display: flex;
+    overflow-x: auto;
+    gap: 1.5rem;
+    padding: 0.5rem 0;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+}
+
+.rosters-container.horizontal-view .roster-card {
+    flex: 0 0 380px;
+    min-width: 380px;
+    max-width: 380px;
+}
+
+/* Ultra-wide monitor optimization */
+@media (min-width: 2000px) {
+    .rosters-container.horizontal-view .roster-card {
+        flex: 0 0 420px;
+        min-width: 420px;
+        max-width: 420px;
+    }
+    
+    .rosters-container.horizontal-view .rosters-grid {
+        gap: 2rem;
+        padding: 1rem 0;
+    }
+}
+
+/* Horizontal view with more teams visible */
+.rosters-container.horizontal-view .rosters-grid {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* Smooth scrolling for horizontal view */
+.rosters-container.horizontal-view .rosters-grid {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) var(--bg-tertiary);
+}
+
+/* Custom scrollbar for horizontal view */
+.rosters-container.horizontal-view .rosters-grid::-webkit-scrollbar {
+    height: 8px;
+}
+
+.rosters-container.horizontal-view .rosters-grid::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.rosters-container.horizontal-view .rosters-grid::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 4px;
+}
+
+.rosters-container.horizontal-view .rosters-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+}
+
+/* Horizontal view indicator */
+.rosters-container.horizontal-view .controls-header::after {
+    content: 'Horizontal View Active - Scroll horizontally to view all teams';
+    display: block;
+    text-align: center;
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.5rem;
+    margin-top: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Scroll position indicator */
+.rosters-container.horizontal-view .rosters-grid::before {
+    content: '';
+    position: sticky;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+    border-radius: 2px;
+    z-index: 10;
+    opacity: 0.8;
+}
+
+/* Enhanced roster card styling for horizontal view */
+.rosters-container.horizontal-view .roster-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rosters-container.horizontal-view .roster-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* Team count indicator for horizontal view */
+.rosters-container.horizontal-view .controls-header::before {
+    content: attr(data-team-count);
+    display: block;
+    text-align: center;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 0.4rem;
+    margin-bottom: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid var(--border-primary);
+}
+
+/* Improved spacing for horizontal view */
+.rosters-container.horizontal-view .rosters-grid {
+    margin-top: 0.5rem;
+}
+
+/* Visual feedback for scrollable content */
+.rosters-container.horizontal-view .rosters-grid::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 20px;
+    height: 100%;
+    background: linear-gradient(to right, transparent, var(--bg-primary));
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Smooth transitions for view changes */
+.rosters-container .rosters-grid {
+    transition: all 0.3s ease;
+}
+
+/* Responsive adjustments for horizontal view */
+@media (max-width: 1200px) {
+    .rosters-container.horizontal-view .roster-card {
+        flex: 0 0 360px;
+        min-width: 360px;
+        max-width: 360px;
+    }
+}
+
+@media (max-width: 768px) {
+    .rosters-container.horizontal-view .roster-card {
+        flex: 0 0 340px;
+        min-width: 340px;
+        max-width: 340px;
+    }
+    
+    .horizontal-view-btn span {
+        display: none;
+    }
+    
+    .horizontal-view-btn {
+        padding: 0.6rem;
+        min-width: 44px;
+    }
+}
+
+/* Horizontal view help section */
+.rosters-container.horizontal-view .controls-header::after {
+    content: 'Horizontal View Active - Scroll horizontally to view all teams';
+    display: block;
+    text-align: center;
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.5rem;
+    margin-top: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Help section for horizontal view */
+.horizontal-view-help {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    display: none;
+}
+
+.rosters-container.horizontal-view .horizontal-view-help {
+    display: block;
+}
+
+.horizontal-view-help h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.horizontal-view-help .shortcuts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.shortcut-key {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--accent-primary);
+    min-width: 2rem;
+    text-align: center;
 }
