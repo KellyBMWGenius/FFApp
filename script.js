@@ -195,6 +195,25 @@ const findProjectionByEspnId = (sleeperId, espnIdMap, projectionData) => {
     return espnId ? projectionData[espnId] : null;
 };
 
+// NEW: Helper function to get projected points for a player
+const getPlayerProjectedPoints = (player, projectionMode = 'average') => {
+    const espnId = allData.espnIdMap[player.id];
+    const projection = espnId ? allData.projectionData[espnId] : null;
+    
+    if (!projection) return 0;
+    
+    switch (projectionMode) {
+        case 'week':
+            return projection.weekProjection || 0;
+        case 'average':
+            return projection.seasonProjection || 0;
+        case 'season':
+            return (projection.seasonProjection || 0) * 17;
+        default:
+            return projection.seasonProjection || 0;
+    }
+};
+
 // ==================================================================
 // == SECTION 2: ORIGINAL APPLICATION LOGIC (DATA FETCHING & PROCESSING)
 // ==================================================================
@@ -325,13 +344,17 @@ function organizePlayersByPosition(players) {
     const organized = { starters: {}, bench: [] };
     CONFIG.positions.starters.forEach(pos => { organized.starters[pos.name] = []; });
     const availablePlayers = [...players];
+    
     CONFIG.positions.starters.forEach(positionDef => {
         for (let i = 0; i < positionDef.count; i++) {
-            let bestPlayerIndex = -1, bestValue = -1;
+            let bestPlayerIndex = -1, bestProjection = -1;
             availablePlayers.forEach((player, index) => {
-                if (positionDef.positions.includes(player.position) && player.value > bestValue) {
-                    bestValue = player.value;
-                    bestPlayerIndex = index;
+                if (positionDef.positions.includes(player.position)) {
+                    const projectedPoints = getPlayerProjectedPoints(player, appState.projectionMode);
+                    if (projectedPoints > bestProjection) {
+                        bestProjection = projectedPoints;
+                        bestPlayerIndex = index;
+                    }
                 }
             });
             if (bestPlayerIndex >= 0) {
@@ -339,7 +362,12 @@ function organizePlayersByPosition(players) {
             }
         }
     });
-    organized.bench = availablePlayers.sort((a, b) => b.value - a.value);
+    
+    // Sort bench by projected points (not by value)
+    organized.bench = availablePlayers.sort((a, b) => 
+        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+    );
+    
     return organized;
 }
 
@@ -347,7 +375,14 @@ function organizePlayersByActualPosition(players) {
     console.log('organizePlayersByActualPosition: Input players:', players);
     const organized = { QB: [], RB: [], WR: [], TE: [] };
     players.forEach(player => { if (organized[player.position]) organized[player.position].push(player); });
-    Object.keys(organized).forEach(pos => organized[pos].sort((a, b) => b.value - a.value));
+    
+    // Sort by projected points instead of value
+    Object.keys(organized).forEach(pos => {
+        organized[pos].sort((a, b) => 
+            getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+        );
+    });
+    
     console.log('organizePlayersByActualPosition: Output organized:', organized);
     return organized;
 }
@@ -1817,11 +1852,19 @@ function calculateOptimalLineup(players) {
         FLEX: []
     };
     
-    // Sort players by value within each position
-    const qbs = availablePlayers.filter(p => p.position === 'QB').sort((a, b) => (b.value || 0) - (a.value || 0));
-    const rbs = availablePlayers.filter(p => p.position === 'RB').sort((a, b) => (b.value || 0) - (a.value || 0));
-    const wrs = availablePlayers.filter(p => p.position === 'WR').sort((a, b) => (b.value || 0) - (a.value || 0));
-    const tes = availablePlayers.filter(p => p.position === 'TE').sort((a, b) => (b.value || 0) - (a.value || 0));
+    // Sort players by projected points within each position
+    const qbs = availablePlayers.filter(p => p.position === 'QB').sort((a, b) => 
+        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+    );
+    const rbs = availablePlayers.filter(p => p.position === 'RB').sort((a, b) => 
+        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+    );
+    const wrs = availablePlayers.filter(p => p.position === 'WR').sort((a, b) => 
+        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+    );
+    const tes = availablePlayers.filter(p => p.position === 'TE').sort((a, b) => 
+        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+    );
     
     // Fill required positions
     if (qbs.length > 0) lineup.QB.push(qbs[0]);
@@ -1832,13 +1875,15 @@ function calculateOptimalLineup(players) {
     if (wrs.length > 2) lineup.WR.push(wrs[2]);
     if (tes.length > 0) lineup.TE.push(tes[0]);
     
-    // Fill flex positions with best remaining players
+    // Fill flex positions with best remaining players by projected points
     const remainingPlayers = [
         ...qbs.slice(1),
         ...rbs.slice(2),
         ...wrs.slice(3),
         ...tes.slice(1)
-    ].sort((a, b) => (b.value || 0) - (a.value || 0));
+    ].sort((a, b) => 
+        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+    );
     
     // SFLEX (can be QB)
     if (remainingPlayers.length > 0) {
