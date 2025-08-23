@@ -41,12 +41,16 @@
                     <span id="errorText"></span>
                 </div>
 
-                <div class="rosters-container" id="rostersContainer" style="display: none;">
+                <div class="view-switcher">
+                    <button id="showRosterAnalyzerBtn" class="view-tab active">Roster Analyzer</button>
+                    <button id="showTradeCalculatorBtn" class="view-tab">Trade Calculator</button>
+                </div>
+
+                <div class="rosters-container" id="rostersContainer">
                     <header class="controls-header">
-                        <!-- Group 1: Team Selection -->
                         <div class="control-item">
                             <label for="teamSelect">Teams:</label>
-                            <div class="custom-select">
+                            <div class="custom-select" id="teamSelect">
                                 <div class="select-trigger" id="teamSelectTrigger">
                                     <span id="teamSelectLabel">All Teams</span>
                                     <i class="fas fa-chevron-down"></i>
@@ -56,12 +60,10 @@
                                         <input type="checkbox" id="selectAll" checked>
                                         <label for="selectAll">All Teams</label>
                                     </div>
-                                    <!-- Team options will be populated by JavaScript -->
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Group 2: Position Toggles -->
                         <div class="control-item">
                             <div class="toggle-buttons" id="position-toggles">
                                 <button class="active" data-filter="all">All Positions</button>
@@ -70,13 +72,11 @@
                             </div>
                         </div>
 
-                        <!-- Spacer to push subsequent items to the right -->
                         <div class="spacer"></div>
 
-                        <!-- Group 3: View Mode -->
                         <div class="control-item">
                             <label for="sortBy">View Mode:</label>
-                            <div class="custom-select">
+                            <div class="custom-select" id="sortBySelect">
                                 <div class="select-trigger" id="sortByTrigger">
                                     <span id="sortByLabel">Default (Optimal Lineup)</span>
                                     <i class="fas fa-chevron-down"></i>
@@ -88,10 +88,9 @@
                             </div>
                         </div>
 
-                        <!-- Group 4: Team Sorting -->
                         <div class="control-item">
                             <label for="teamSortBy">Sort Teams:</label>
-                            <div class="custom-select">
+                            <div class="custom-select" id="teamSortBySelect">
                                 <div class="select-trigger" id="teamSortByTrigger">
                                     <span id="teamSortByLabel">Total Value</span>
                                     <i class="fas fa-chevron-down"></i>
@@ -105,49 +104,41 @@
                             </div>
                         </div>
 
-                        <!-- Group 4: Display Options Button and Popover -->
                         <div class="display-options-container">
                             <button class="display-options-btn" id="display-options-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l.34-.1a1.464 1.464 0 0 1 .872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
-                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l.34-.1a1.464 1.464 0 0 1 .872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/></svg>
                                 Display Options
                             </button>
-
-                            <!-- Horizontal View Toggle -->
                             <button class="horizontal-view-btn" id="horizontalViewBtn" title="Toggle horizontal view for side-by-side roster comparison (Ctrl+H)">
                                 <i class="fas fa-arrows-alt-h"></i>
                                 <span>Horizontal View</span>
                             </button>
                         </div>
                     </header>
-                    
-                    <!-- Display Options Panel -->
                     <div class="display-options-panel hidden" id="display-options-panel">
                         <div class="display-options-content">
                             <div class="control-item">
                                 <label for="projectionMode">Projection Mode:</label>
-                                <div class="custom-select">
+                                <div class="custom-select" id="projectionModeSelect">
                                     <div class="select-trigger" id="projectionModeTrigger">
-                                        <span id="projectionModeLabel">Average</span>
+                                        <span id="projectionModeLabel">Weekly Average</span>
                                         <i class="fas fa-chevron-down"></i>
                                     </div>
                                     <div class="select-options" id="projectionModeOptions">
-                                        <div class="select-option" data-value="average">Average</div>
-                                        <div class="select-option" data-value="week">Week 1</div>
-                                        <div class="select-option" data-value="season">Season</div>
+                                        <div class="select-option" data-value="week">Weekly Projection</div>
+                                        <div class="select-option" data-value="average">Weekly Average</div>
+                                        <div class="select-option" data-value="season">Season Total</div>
                                     </div>
                                 </div>
                             </div>
-
                             <div class="control-item">
-                                <label for="valueNormalization">Value Display:</label>
-                                <div class="custom-select">
-                                    <div class="select-trigger" id="valueNormalizationTrigger">
-                                        <span id="valueNormalizationLabel">Raw Values</span>
+                                <label for="valueDisplay">Value Display:</label>
+                                <div class="custom-select" id="valueDisplaySelect">
+                                    <div class="select-trigger" id="valueDisplayTrigger">
+                                        <span id="valueDisplayLabel">Raw Values</span>
                                         <i class="fas fa-chevron-down"></i>
                                     </div>
-                                    <div class="select-options" id="valueNormalizationOptions">
+                                    <div class="select-options" id="valueDisplayOptions">
                                         <div class="select-option" data-value="raw">Raw Values</div>
                                         <div class="select-option" data-value="normalized">Normalized (0-100)</div>
                                     </div>
@@ -155,45 +146,32 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Horizontal View Help Section -->
-                    <div class="horizontal-view-help" id="horizontalViewHelp">
-                        <h4>Keyboard Shortcuts for Horizontal View</h4>
-                        <div class="shortcuts">
-                            <div class="shortcut-item">
-                                <span class="shortcut-key">Ctrl+H</span>
-                                <span>Toggle horizontal view</span>
-                            </div>
-                            <div class="shortcut-item">
-                                <span class="shortcut-key">← →</span>
-                                <span>Scroll left/right by one team</span>
-                            </div>
-                            <div class="shortcut-item">
-                                <span class="shortcut-key">Home</span>
-                                <span>Scroll to first team</span>
-                            </div>
-                            <div class="shortcut-item">
-                                <span class="shortcut-key">End</span>
-                                <span>Scroll to last team</span>
-                            </div>
+                    <div class="horizontal-view-help" id="horizontalViewHelp"></div>
+                    <div class="rosters-grid" id="rostersGrid"></div>
+                </div>
+
+                <div class="trade-calculator-container" id="tradeCalculatorContainer" style="display: none;">
+                    <div class="trade-interface" id="tradeInterface">
                         </div>
-                    </div>
-                    
-                    <div class="rosters-grid" id="rostersGrid">
-                        <!-- Dynamic roster cards will be inserted here -->
-                    </div>
+                    <div class="trade-summary" id="tradeSummary">
+                        </div>
                 </div>
             </div>
         </main>
 
         <footer class="footer">
             <div class="container">
-                <p>
-                    Data from <a href="https://sleeper.app" target="_blank">Sleeper</a> 
-                    and <a href="https://www.fantasycalc.com" target="_blank">FantasyCalc</a>
-                </p>
+                <p>Data from <a href="https://sleeper.app" target="_blank">Sleeper</a> and <a href="https://www.fantasycalc.com" target="_blank">FantasyCalc</a></p>
             </div>
         </footer>
+    </div>
+
+    <div id="destinationModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <p>Send player to:</p>
+            <div id="destinationOptions"></div>
+            <button id="cancelDestinationBtn" class="btn">Cancel</button>
+        </div>
     </div>
 
     <script src="script.js"></script>
