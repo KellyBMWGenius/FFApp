@@ -1431,7 +1431,7 @@ function createTradePlayerRow(player, rosterId) {
         <div class="player-info">
             <div class="player-name">${player.name} <span class="player-team">${player.team || 'FA'}</span></div>
         </div>
-        <div class="position-badge">${player.position}</div>
+        <div class="position-badge" data-position="${player.position}">${player.position}</div>
         <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
         <div class="player-value ${getValueClass(displayValue, player.position, appState.valueNormalization === 'normalized')}">${formatValue(displayValue, appState.valueNormalization === 'normalized')}</div>
     </div>`;
@@ -1572,7 +1572,7 @@ function createPlayerCard(player, type, rosterId) {
             <div class="player-name">${player.name}</div>
             <div class="player-details">${player.team}</div>
         </div>
-        <div class="position-badge">${player.position}</div>
+        <div class="position-badge" data-position="${player.position}">${player.position}</div>
         <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
         <div class="player-value ${getValueClass(player.value, player.position, appState.valueNormalization === 'normalized')}">${formatValue(player.value, appState.valueNormalization === 'normalized')}</div>
         <button class="remove-player-btn" onclick="removePlayerFromTrade('${player.id}', '${rosterId}', '${type}')" title="Remove from trade">
@@ -1623,9 +1623,10 @@ function calculateAndDisplayTrade() {
         });
     });
     
-    summaryContainer.innerHTML = '<div class="trade-summary-teams"></div><div class="trade-summary-players"></div>';
+    summaryContainer.innerHTML = '<div class="trade-summary-teams"></div><div class="trade-summary-players"></div><div class="trade-lineup-comparison"></div>';
     const teamsContainer = summaryContainer.querySelector('.trade-summary-teams');
     const playersContainer = summaryContainer.querySelector('.trade-summary-players');
+    const lineupComparisonContainer = summaryContainer.querySelector('.trade-lineup-comparison');
     
     // Display team summaries
     teamsSummaryData.forEach(data => {
@@ -1645,12 +1646,20 @@ function calculateAndDisplayTrade() {
             valueColor = '#dc2626'; // Red for more negative than 5% threshold
         }
         
+        // Format the net value according to normalization setting
+        let displayNetValue = data.netValue;
+        if (appState.valueNormalization === 'normalized') {
+            displayNetValue = normalizeValue(data.netValue, getMaxPlayerValue(allData.playerValues));
+        }
+        
         const summaryEl = document.createElement('div');
         summaryEl.className = 'trade-summary-team';
         summaryEl.innerHTML = `
             <div class="summary-team-name">${teamInfo.teamName}</div>
             <div class="summary-net-value" style="color: ${valueColor};">
-                ${data.netValue >= 0 ? '+' : ''}${Math.round(data.netValue).toLocaleString()}
+                ${data.netValue >= 0 ? '+' : ''}${appState.valueNormalization === 'normalized' ? 
+                    Math.round(displayNetValue) : 
+                    Math.round(data.netValue).toLocaleString()}
             </div>
             <div class="summary-tax-info">${data.taxInfo}</div>`;
         teamsContainer.appendChild(summaryEl);
@@ -1705,6 +1714,13 @@ function calculateAndDisplayTrade() {
             
             playersContainer.appendChild(teamPlayersEl);
         });
+
+        // Add lineup comparison button
+        const lineupComparisonBtn = document.createElement('button');
+        lineupComparisonBtn.className = 'btn btn-primary lineup-comparison-btn';
+        lineupComparisonBtn.innerHTML = '<i class="fas fa-chart-line"></i> Compare Lineups';
+        lineupComparisonBtn.onclick = () => generateLineupComparison(teamsSummaryData);
+        lineupComparisonContainer.appendChild(lineupComparisonBtn);
     }
 
     const allInvolvedPlayerIds = new Set();
@@ -1724,6 +1740,358 @@ function calculateAndDisplayTrade() {
     });
 }
 
+function generateLineupComparison(teamsSummaryData) {
+    const lineupComparisonContainer = document.querySelector('.trade-lineup-comparison');
+    
+    // Clear previous comparison
+    lineupComparisonContainer.innerHTML = '';
+    
+    // Add loading state
+    const loadingEl = document.createElement('div');
+    loadingEl.className = 'lineup-comparison-loading';
+    loadingEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating lineup comparisons...';
+    lineupComparisonContainer.appendChild(loadingEl);
+    
+    // Use setTimeout to allow UI to update before heavy calculations
+    setTimeout(() => {
+        const comparisonResults = calculateLineupComparisons(teamsSummaryData);
+        displayLineupComparisons(lineupComparisonContainer, comparisonResults);
+    }, 100);
+}
+
+function calculateLineupComparisons(teamsSummaryData) {
+    const results = [];
+    
+    teamsSummaryData.forEach(teamData => {
+        const roster = allData.processedRosters.find(r => r.rosterId === teamData.rosterId);
+        if (!roster) return;
+        
+        // Calculate pre-trade lineup
+        const preTradeLineup = calculateOptimalLineup(roster.players);
+        const preTradeStats = calculateLineupStats(preTradeLineup);
+        
+        // Calculate post-trade lineup
+        const postTradePlayers = calculatePostTradeRoster(roster.players, teamData.sending, teamData.receiving);
+        const postTradeLineup = calculateOptimalLineup(postTradePlayers);
+        const postTradeStats = calculateLineupStats(postTradeLineup);
+        
+        // Track position changes for each player
+        const positionChanges = calculatePositionChanges(preTradeLineup, postTradeLineup);
+        
+        results.push({
+            teamName: roster.teamName,
+            rosterId: teamData.rosterId,
+            preTrade: {
+                lineup: preTradeLineup,
+                stats: preTradeStats
+            },
+            postTrade: {
+                lineup: postTradeLineup,
+                stats: postTradeStats
+            },
+            changes: {
+                starterValue: postTradeStats.starterValue - preTradeStats.starterValue,
+                totalValue: postTradeStats.totalValue - preTradeStats.totalValue,
+                weeklyPoints: postTradeStats.weeklyPoints - preTradeStats.weeklyPoints
+            },
+            positionChanges: positionChanges,
+            tradeInfo: {
+                sending: teamData.sending,
+                receiving: teamData.receiving
+            }
+        });
+    });
+    
+    return results;
+}
+
+function calculateOptimalLineup(players) {
+    // Create a copy of players to work with
+    const availablePlayers = [...players];
+    const lineup = {
+        QB: [],
+        RB: [],
+        WR: [],
+        TE: [],
+        SFLEX: [],
+        FLEX: []
+    };
+    
+    // Sort players by value within each position
+    const qbs = availablePlayers.filter(p => p.position === 'QB').sort((a, b) => (b.value || 0) - (a.value || 0));
+    const rbs = availablePlayers.filter(p => p.position === 'RB').sort((a, b) => (b.value || 0) - (a.value || 0));
+    const wrs = availablePlayers.filter(p => p.position === 'WR').sort((a, b) => (b.value || 0) - (a.value || 0));
+    const tes = availablePlayers.filter(p => p.position === 'TE').sort((a, b) => (b.value || 0) - (a.value || 0));
+    
+    // Fill required positions
+    if (qbs.length > 0) lineup.QB.push(qbs[0]);
+    if (rbs.length > 0) lineup.RB.push(rbs[0]);
+    if (rbs.length > 1) lineup.RB.push(rbs[1]);
+    if (wrs.length > 0) lineup.WR.push(wrs[0]);
+    if (wrs.length > 1) lineup.WR.push(wrs[1]);
+    if (wrs.length > 2) lineup.WR.push(wrs[2]);
+    if (tes.length > 0) lineup.TE.push(tes[0]);
+    
+    // Fill flex positions with best remaining players
+    const remainingPlayers = [
+        ...qbs.slice(1),
+        ...rbs.slice(2),
+        ...wrs.slice(3),
+        ...tes.slice(1)
+    ].sort((a, b) => (b.value || 0) - (a.value || 0));
+    
+    // SFLEX (can be QB)
+    if (remainingPlayers.length > 0) {
+        lineup.SFLEX.push(remainingPlayers[0]);
+        remainingPlayers.splice(0, 1);
+    }
+    
+    // FLEX positions (RB, WR, TE only)
+    const flexEligible = remainingPlayers.filter(p => p.position !== 'QB');
+    if (flexEligible.length > 0) {
+        lineup.FLEX.push(flexEligible[0]);
+        if (flexEligible.length > 1) {
+            lineup.FLEX.push(flexEligible[1]);
+        }
+    }
+    
+    return lineup;
+}
+
+function calculateLineupStats(lineup) {
+    let starterValue = 0;
+    let totalValue = 0;
+    let weeklyPoints = 0;
+    
+    Object.values(lineup).forEach(players => {
+        players.forEach(player => {
+            // Use raw value for calculations if normalization is selected, otherwise use the already-normalized value
+            let valueToUse = player.value;
+            if (appState.valueNormalization === 'normalized') {
+                // If normalized is selected, we need to use the raw value for calculations
+                // since the normalized value is just for display
+                valueToUse = player.rawValue;
+            }
+            
+            starterValue += valueToUse || 0;
+            totalValue += valueToUse || 0;
+            
+            // Calculate weekly points from ESPN projections
+            const espnId = allData.espnIdMap[player.id];
+            const projection = espnId ? allData.projectionData[espnId] : null;
+            if (projection) {
+                if (appState.projectionMode === 'week') {
+                    weeklyPoints += projection.weekProjection || 0;
+                } else if (appState.projectionMode === 'average') {
+                    weeklyPoints += projection.seasonProjection || 0;
+                } else {
+                    weeklyPoints += (projection.seasonProjection || 0) * 17;
+                }
+            }
+        });
+    });
+    
+    return { starterValue, totalValue, weeklyPoints };
+}
+
+function calculatePostTradeRoster(originalPlayers, sending, receiving) {
+    // Remove players being sent away
+    const playersAfterSending = originalPlayers.filter(p => !sending.find(s => s.id === p.id));
+    
+    // Add players being received
+    const finalRoster = [...playersAfterSending, ...receiving];
+    
+    return finalRoster;
+}
+
+function displayLineupComparisons(container, results) {
+    container.innerHTML = '';
+    
+    // Add header
+    const header = document.createElement('h3');
+    header.className = 'lineup-comparison-header';
+    header.innerHTML = '<i class="fas fa-chart-line"></i> Lineup Comparison';
+    container.appendChild(header);
+    
+    // Add legend
+    const legend = document.createElement('div');
+    legend.className = 'lineup-comparison-legend';
+    legend.innerHTML = `
+        <div class="legend-item">
+            <span class="legend-color promoted"></span>
+            <span class="legend-text">Promoted (Bench/Flex → Starter)</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color demoted"></span>
+            <span class="legend-text">Demoted (Starter → Flex/Bench)</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color being-sent"></span>
+            <span class="legend-text">Player Being Sent Away</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color being-received"></span>
+            <span class="legend-text">Player Being Received</span>
+        </div>
+    `;
+    container.appendChild(legend);
+    
+    // Create comparison cards for each team
+    results.forEach(result => {
+        const teamCard = createTeamLineupComparisonCard(result);
+        container.appendChild(teamCard);
+    });
+}
+
+function createTeamLineupComparisonCard(result) {
+    const card = document.createElement('div');
+    card.className = 'lineup-comparison-card';
+    
+    // Calculate change indicators
+    const starterValueChange = result.changes.starterValue;
+    const weeklyPointsChange = result.changes.weeklyPoints;
+    
+    const starterValueClass = starterValueChange > 0 ? 'positive' : starterValueChange < 0 ? 'negative' : 'neutral';
+    const weeklyPointsClass = weeklyPointsChange > 0 ? 'positive' : weeklyPointsChange < 0 ? 'negative' : 'neutral';
+    
+    card.innerHTML = `
+        <div class="lineup-comparison-team-header">
+            <h4>${result.teamName}</h4>
+            <div class="lineup-comparison-summary">
+                <div class="summary-item ${starterValueClass}">
+                    <span class="summary-label">Starter Value:</span>
+                    <span class="summary-value">
+                        ${starterValueChange > 0 ? '+' : ''}${appState.valueNormalization === 'normalized' ? 
+                            Math.round(normalizeValue(starterValueChange, getMaxPlayerValue(allData.playerValues))) : 
+                            Math.round(starterValueChange).toLocaleString()}
+                    </span>
+                </div>
+                <div class="summary-item ${weeklyPointsClass}">
+                    <span class="summary-label">Weekly Points:</span>
+                    <span class="summary-value">
+                        ${weeklyPointsChange > 0 ? '+' : ''}${weeklyPointsChange.toFixed(1)}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="lineup-comparison-details">
+            <div class="lineup-section">
+                <h5>Pre-Trade Lineup</h5>
+                <div class="lineup-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Starter Value:</span>
+                        <span class="stat-value">${appState.valueNormalization === 'normalized' ? 
+                            Math.round(normalizeValue(result.preTrade.stats.starterValue, getMaxPlayerValue(allData.playerValues))) : 
+                            Math.round(result.preTrade.stats.starterValue).toLocaleString()}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Weekly Points:</span>
+                        <span class="stat-value">${result.preTrade.stats.weeklyPoints.toFixed(1)}</span>
+                    </div>
+                </div>
+                <div class="lineup-players">
+                    ${renderLineupPlayers(result.preTrade.lineup, 'pre', result.tradeInfo, result.positionChanges)}
+                </div>
+            </div>
+            
+            <div class="lineup-section">
+                <h5>Post-Trade Lineup</h5>
+                <div class="lineup-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Starter Value:</span>
+                        <span class="stat-value">${appState.valueNormalization === 'normalized' ? 
+                            Math.round(normalizeValue(result.postTrade.stats.starterValue, getMaxPlayerValue(allData.playerValues))) : 
+                            Math.round(result.postTrade.stats.starterValue).toLocaleString()}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Weekly Points:</span>
+                        <span class="stat-value">${result.postTrade.stats.weeklyPoints.toFixed(1)}</span>
+                    </div>
+                </div>
+                <div class="lineup-players">
+                    ${renderLineupPlayers(result.postTrade.lineup, 'post', result.tradeInfo, result.positionChanges)}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+function renderLineupPlayers(lineup, prefix, tradeInfo, positionChanges) {
+    let html = '';
+    
+    Object.entries(lineup).forEach(([position, players]) => {
+        if (players.length > 0) {
+            html += `<div class="lineup-position">
+                <div class="position-name">${position}</div>
+                <div class="position-players">`;
+            
+            players.forEach(player => {
+                const espnId = allData.espnIdMap[player.id];
+                const projection = espnId ? allData.projectionData[espnId] : null;
+                let projectionText = 'N/A';
+                if (projection) {
+                    if (appState.projectionMode === 'week') {
+                        projectionText = projection.weekProjection?.toFixed(1) || 'N/A';
+                    } else if (appState.projectionMode === 'average') {
+                        projectionText = projection.seasonProjection?.toFixed(1) || 'N/A';
+                    } else {
+                        projectionText = ((projection.seasonProjection || 0) * 17).toFixed(1);
+                    }
+                }
+                
+                // Get the correct value to display (same as roster lists above)
+                let displayValue = player.value;
+                if (appState.valueNormalization === 'normalized' && player.rawValue !== undefined) {
+                    displayValue = normalizeValue(player.rawValue, getMaxPlayerValue(allData.playerValues));
+                }
+                
+                // Determine player classes for highlighting
+                let playerClass = 'lineup-player';
+                
+                // Check for trade-related highlighting
+                if (tradeInfo) {
+                    if (prefix === 'pre' && tradeInfo.sending.some(p => p.id === player.id)) {
+                        playerClass += ' player-being-sent';
+                    } else if (prefix === 'post' && tradeInfo.receiving.some(p => p.id === player.id)) {
+                        playerClass += ' player-being-received';
+                    }
+                }
+                
+                // Check for position change highlighting
+                if (positionChanges) {
+                    if (prefix === 'pre') {
+                        // Pre-trade: highlight players being demoted
+                        if (positionChanges.demoted.some(c => c.player.id === player.id)) {
+                            playerClass += ' player-demoted';
+                        } else if (positionChanges.starterToFlex.some(c => c.player.id === player.id)) {
+                            playerClass += ' player-demoted';
+                        }
+                    } else if (prefix === 'post') {
+                        // Post-trade: highlight players being promoted
+                        if (positionChanges.promoted.some(c => c.player.id === player.id)) {
+                            playerClass += ' player-promoted';
+                        } else if (positionChanges.flexToStarter.some(c => c.player.id === player.id)) {
+                            playerClass += ' player-promoted';
+                        }
+                    }
+                }
+                
+                html += `<div class="${playerClass}">
+                    <span class="player-name">${player.name}</span>
+                    <span class="player-projection">${projectionText}</span>
+                    <span class="player-value">${formatValue(displayValue, appState.valueNormalization === 'normalized')}</span>
+                </div>`;
+            });
+            
+            html += `</div></div>`;
+        }
+    });
+    
+    return html;
+}
 
 // ==================================================================
 // == SECTION 5: EVENT LISTENERS & APP INITIALIZATION
@@ -2194,4 +2562,94 @@ function initializeTeamSelectorState() {
     
     // Update the label to reflect the current state
     updateTeamSelectorLabel();
+}
+
+function calculatePositionChanges(preTradeLineup, postTradeLineup) {
+    const changes = {
+        promoted: [], // Players moving from bench/flex to starter positions
+        demoted: [],  // Players moving from starter positions to flex/bench
+        flexToStarter: [], // Players moving from flex to true QB/RB/WR/TE positions
+        starterToFlex: []  // Players moving from true positions to flex
+    };
+    
+    // Create maps of player positions for easy lookup
+    const preTradePositions = {};
+    const postTradePositions = {};
+    
+    // Build pre-trade position map
+    Object.entries(preTradeLineup).forEach(([position, players]) => {
+        players.forEach(player => {
+            preTradePositions[player.id] = position;
+        });
+    });
+    
+    // Build post-trade position map
+    Object.entries(postTradeLineup).forEach(([position, players]) => {
+        players.forEach(player => {
+            postTradePositions[player.id] = position;
+        });
+    });
+    
+    // Check for position changes
+    Object.keys(preTradePositions).forEach(playerId => {
+        const prePosition = preTradePositions[playerId];
+        const postPosition = postTradePositions[playerId];
+        
+        if (prePosition !== postPosition) {
+            const player = findPlayerById(playerId);
+            if (!player) return;
+            
+            const change = {
+                player: player,
+                fromPosition: prePosition,
+                toPosition: postPosition
+            };
+            
+            // Determine the type of change
+            if (isStarterPosition(postPosition) && !isStarterPosition(prePosition)) {
+                // Moving to a starter position (QB, RB, WR, TE)
+                if (isFlexPosition(prePosition)) {
+                    // From flex to starter
+                    changes.flexToStarter.push(change);
+                } else {
+                    // From bench to starter
+                    changes.promoted.push(change);
+                }
+            } else if (isStarterPosition(prePosition) && !isStarterPosition(postPosition)) {
+                // Moving from starter to flex/bench
+                if (isFlexPosition(postPosition)) {
+                    // From starter to flex
+                    changes.starterToFlex.push(change);
+                } else {
+                    // From starter to bench
+                    changes.demoted.push(change);
+                }
+            } else if (isFlexPosition(postPosition) && !isFlexPosition(prePosition)) {
+                // Moving to flex from bench
+                changes.promoted.push(change);
+            } else if (isFlexPosition(prePosition) && !isFlexPosition(postPosition)) {
+                // Moving from flex to bench
+                changes.demoted.push(change);
+            }
+        }
+    });
+    
+    return changes;
+}
+
+function isStarterPosition(position) {
+    return ['QB', 'RB', 'WR', 'TE'].includes(position);
+}
+
+function isFlexPosition(position) {
+    return ['SFLEX', 'FLEX'].includes(position);
+}
+
+function findPlayerById(playerId) {
+    // Search through all rosters to find the player
+    for (const roster of allData.processedRosters) {
+        const player = roster.players.find(p => p.id === playerId);
+        if (player) return player;
+    }
+    return null;
 }
