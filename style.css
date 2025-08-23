@@ -690,7 +690,7 @@ body {
 
 .roster-stats {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
 }
 
@@ -1146,9 +1146,29 @@ body {
         max-width: 100%;
         margin: 0 1rem;
     }
+    
+    /* Override 2-team layout on medium screens */
+    .trade-interface.two-teams {
+        grid-template-columns: 1fr 1fr auto; /* Keep third column for add button */
+        max-width: 1200px;
+        margin: 0 auto;
+        gap: 1.5rem;
+    }
+    
+    /* Override 3-team layout on medium screens */
+    .trade-interface:has(.trade-team-column:nth-child(3):last-child),
+    .trade-interface.three-teams {
+        grid-template-columns: 1fr 1fr 1fr;
+        max-width: 1200px;
+        margin: 0 auto;
+        gap: 1.5rem;
+    }
+    
+    /* Trade team columns should still fill available width */
     .trade-team-column {
-        min-width: 400px;
-        max-width: 400px;
+        min-width: 0;
+        max-width: none;
+        width: 100%;
     }
     
     /* Adjust roster card width for smaller screens */
@@ -1167,9 +1187,32 @@ body {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
+    
+    /* Override 2-team layout on mobile */
+    .trade-interface.two-teams {
+        grid-template-columns: 1fr auto; /* Keep second column for add button */
+        max-width: 100%;
+        gap: 1rem;
+    }
+    
+    /* Override 3-team layout on mobile */
+    .trade-interface:has(.trade-team-column:nth-child(3):last-child),
+    .trade-interface.three-teams {
+        grid-template-columns: 1fr;
+        max-width: 100%;
+        gap: 1rem;
+    }
+    
     .add-team-container {
         width: 100%;
         min-height: 150px;
+    }
+    
+    /* Trade team columns should still fill available width on mobile */
+    .trade-team-column {
+        min-width: 0;
+        max-width: none;
+        width: 100%;
     }
     
     /* Stack roster cards vertically on mobile */
@@ -1243,17 +1286,60 @@ body {
     width: 100%;
 }
 
+/* Adjust grid layout when only 2 teams are present */
+.trade-interface:has(.trade-team-column:nth-child(2):last-child) {
+    grid-template-columns: 1fr 1fr auto;
+    justify-content: center;
+    max-width: 1400px;
+}
+
+/* Adjust grid layout when only 1 team is present */
+.trade-interface:has(.trade-team-column:nth-child(1):last-child) {
+    grid-template-columns: 1fr auto;
+    justify-content: center;
+    max-width: 1400px;
+}
+
+/* Alternative approach using CSS classes for better browser support */
+.trade-interface.two-teams {
+    grid-template-columns: 1fr 1fr auto; /* Keep third column for add button */
+    justify-content: center;
+    max-width: 1400px;
+    gap: 1.5rem;
+}
+
+.trade-interface.one-team {
+    grid-template-columns: 1fr auto; /* Keep second column for add button */
+    justify-content: center;
+    max-width: 1400px;
+}
+
+/* When three teams are present, distribute width equally */
+.trade-interface:has(.trade-team-column:nth-child(3):last-child),
+.trade-interface.three-teams {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+}
+
+/* Ensure the add team button is properly positioned in its column slot */
+.trade-interface .add-team-container {
+    min-width: 200px;
+    max-width: 450px;
+    align-self: stretch;
+}
+
+/* Make trade team columns fill available width like roster analyzer */
+.trade-team-column {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+}
+
 /* Ensure sorting header spans full width */
 .trade-interface .trade-sorting-header {
     grid-column: 1 / -1;
     width: 100%;
     margin-bottom: 1rem;
-}
-
-/* Make trade team columns match main roster card width */
-.trade-team-column {
-    min-width: 450px;
-    max-width: 450px;
 }
 
 .trade-team-column {
@@ -1505,6 +1591,7 @@ body {
     padding: 1.5rem;
     border: 1px solid var(--border-primary);
     box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
 }
 
 .trade-summary-teams {
@@ -1537,21 +1624,105 @@ body {
     margin-bottom: 0.5rem;
 }
 
-.summary-power-bar-container {
-    width: 100%;
-    background: var(--bg-tertiary);
-    height: 12px;
-    border-radius: 6px;
-    overflow: hidden;
-    margin-top: 0.5rem;
+
+
+/* Trade Summary Player Cards */
+.trade-summary-players {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.trade-summary-team-players {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 1.5rem;
     border: 1px solid var(--border-primary);
 }
 
-.summary-power-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent-hover), var(--accent-primary));
+
+
+.trade-summary-section {
+    margin-bottom: 1.5rem;
+}
+
+.trade-summary-section:last-child {
+    margin-bottom: 0;
+}
+
+.trade-summary-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    padding: 0.5rem 0.75rem;
     border-radius: 6px;
-    transition: width 0.5s ease-in-out;
+    text-align: center;
+}
+
+.trade-summary-section-title.sending {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+.trade-summary-section-title.receiving {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.trade-summary-player-cards {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.trade-summary-player-card {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto auto auto;
+    gap: 0.75rem;
+    align-items: center;
+    background: var(--bg-player-row);
+    border-radius: 8px;
+    padding: 0.75rem;
+    border: 1px solid var(--border-secondary);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+}
+
+.trade-summary-player-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.trade-summary-player-card.sending {
+    border-left: 4px solid #dc2626;
+}
+
+.trade-summary-player-card.receiving {
+    border-left: 4px solid #22c55e;
+}
+
+.remove-player-btn {
+    background: var(--bg-danger);
+    border: 1px solid var(--border-danger);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-danger);
+    font-size: 0.8rem;
+}
+
+.remove-player-btn:hover {
+    background: var(--accent-danger);
+    border-color: var(--accent-danger);
+    transform: scale(1.1);
+    color: white;
 }
 
 /* Add Team Button */
@@ -1725,6 +1896,93 @@ body {
 }
 
 .sorting-controls .select-option:last-child {
+    border-radius: 0 0 4px 4px;
+}
+
+/* Trade Display Options */
+.trade-display-options {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-left: 2rem;
+}
+
+.trade-display-options .control-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.trade-display-options label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.trade-display-options .custom-select {
+    position: relative;
+    min-width: 140px;
+    z-index: 9999;
+}
+
+.trade-display-options .select-trigger {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+.trade-display-options .select-trigger:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-hover);
+}
+
+.trade-display-options .select-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    margin-top: 1px;
+    box-shadow: var(--shadow-hover);
+    z-index: 9999;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.2s ease;
+}
+
+.trade-display-options .custom-select.active .select-options {
+    max-height: 200px;
+    overflow: visible;
+}
+
+.trade-display-options .select-option {
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+.trade-display-options .select-option:hover {
+    background: var(--bg-hover);
+}
+
+.trade-display-options .select-option:first-child {
+    border-radius: 4px 4px 0 0;
+}
+
+.trade-display-options .select-option:last-child {
     border-radius: 0 0 4px 4px;
 }
 

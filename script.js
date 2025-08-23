@@ -667,8 +667,7 @@ function createRosterCard(roster, maxData = null, rank = null) {
     const card = document.createElement('div');
     card.className = 'roster-card';
     card.setAttribute('data-view-mode', appState.viewMode);
-    const posScoreHTML = appState.viewMode === 'positional' && roster.stats.positionalScores ?
-        `<div class="stat"><div class="stat-value">${calculateOverallPositionalScore(roster.stats.positionalScores)}</div><div>Positional Score</div></div>` : '';
+
     const rankHTML = rank ? `<div class="rank-badge">#${rank}</div>` : '';
     card.innerHTML = `
         <div class="roster-header">
@@ -678,7 +677,6 @@ function createRosterCard(roster, maxData = null, rank = null) {
                 <div class="stat"><div class="stat-value">${formatValue(roster.stats.totalValue)}</div><div>Total Value</div></div>
                 <div class="stat"><div class="stat-value">${formatValue(roster.stats.starterValue)}</div><div>Starter Value</div></div>
                 <div class="stat"><div class="stat-value">${roster.stats.totalWeeklyPoints.toFixed(1)}</div><div>Total Weekly Points</div></div>
-                ${posScoreHTML}
             </div>
         </div>
         <div class="roster-body">
@@ -799,20 +797,26 @@ function createPlayerRow(player) {
 function switchView(view) {
     const rosterAnalyzer = document.getElementById('rostersContainer');
     const tradeCalculator = document.getElementById('tradeCalculatorContainer');
+    const tradeSummary = document.getElementById('tradeSummary');
     const rosterBtn = document.getElementById('showRosterAnalyzerBtn');
     const tradeBtn = document.getElementById('showTradeCalculatorBtn');
 
     if (view === 'trade') {
         rosterAnalyzer.style.display = 'none';
         tradeCalculator.style.display = 'flex';
+        tradeSummary.style.display = 'block';
         rosterBtn.classList.remove('active');
         tradeBtn.classList.add('active');
         if (tradeState.teams.length === 0 && allData.processedRosters.length > 0) {
             initTradeCalculator();
+        } else if (tradeState.teams.length > 0) {
+            // Update trade calculator display option labels to match current app state
+            updateTradeDisplayOptionLabels();
         }
     } else { // 'analyzer'
         rosterAnalyzer.style.display = 'block';
         tradeCalculator.style.display = 'none';
+        tradeSummary.style.display = 'none';
         rosterBtn.classList.add('active');
         tradeBtn.classList.remove('active');
     }
@@ -844,11 +848,44 @@ function initTradeCalculator() {
                 </div>
             </div>
         </div>
+        
+        <div class="trade-display-options">
+            <div class="control-item">
+                <label for="tradeProjectionMode">Projection Mode:</label>
+                <div class="custom-select" id="tradeProjectionModeSelect">
+                    <div class="select-trigger" id="tradeProjectionModeTrigger">
+                        <span id="tradeProjectionModeLabel">Weekly Average</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="select-options" id="tradeProjectionModeOptions">
+                        <div class="select-option" data-value="week">Weekly Projection</div>
+                        <div class="select-option" data-value="average">Weekly Average</div>
+                        <div class="select-option" data-value="season">Season Total</div>
+                    </div>
+                </div>
+            </div>
+            <div class="control-item">
+                <label for="tradeValueDisplay">Value Display:</label>
+                <div class="custom-select" id="tradeValueDisplaySelect">
+                    <div class="select-trigger" id="tradeValueDisplayTrigger">
+                        <span id="tradeValueDisplayLabel">Raw Values</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="select-options" id="tradeValueDisplayOptions">
+                        <div class="select-option" data-value="raw">Raw Values</div>
+                        <div class="select-option" data-value="normalized">Normalized (0-100)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
     tradeInterface.appendChild(sortingHeader);
 
     // Add event listeners for sorting
     setupTradeSortingControls();
+    
+    // Update trade calculator display option labels to match current app state
+    updateTradeDisplayOptionLabels();
 
     const myUser = allData.users.find(u => u.display_name.toLowerCase() === CONFIG.sleeper.username.toLowerCase());
     const myRoster = myUser ? allData.processedRosters.find(r => r.user.user_id === myUser.user_id) : allData.processedRosters[0];
@@ -857,6 +894,9 @@ function initTradeCalculator() {
     if (myRoster) addTradeTeam(myRoster.rosterId);
     if (otherRoster) addTradeTeam(otherRoster.rosterId);
     renderAddTeamButton();
+    
+    // Set initial layout classes
+    updateTradeInterfaceLayout();
 }
 
 function setupTradeSortingControls() {
@@ -899,6 +939,12 @@ function setupTradeSortingControls() {
             select.classList.remove('active');
         }
     });
+    
+    // Setup trade projection mode controls
+    setupTradeProjectionModeControls();
+    
+    // Setup trade value display controls
+    setupTradeValueDisplayControls();
 }
 
 function sortTradeTeams(sortBy) {
@@ -968,6 +1014,123 @@ function sortTradeTeams(sortBy) {
     tradeState.teams.forEach(team => renderTeamRoster(team.rosterId, team.listElId));
 }
 
+function setupTradeProjectionModeControls() {
+    const trigger = document.getElementById('tradeProjectionModeTrigger');
+    const options = document.getElementById('tradeProjectionModeOptions');
+    const label = document.getElementById('tradeProjectionModeLabel');
+    const select = trigger.closest('.custom-select');
+    
+    // Toggle dropdown
+    trigger.addEventListener('click', () => {
+        // Close other dropdowns first
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        
+        // Toggle this dropdown
+        select.classList.toggle('active');
+    });
+    
+    // Handle option selection
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            
+            // Update label and close dropdown
+            label.textContent = text;
+            select.classList.remove('active');
+            
+            // Update projection mode and re-render
+            appState.projectionMode = value;
+            tradeState.teams.forEach(team => renderTeamRoster(team.rosterId, team.listElId));
+        });
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
+function setupTradeValueDisplayControls() {
+    const trigger = document.getElementById('tradeValueDisplayTrigger');
+    const options = document.getElementById('tradeValueDisplayOptions');
+    const label = document.getElementById('tradeValueDisplayLabel');
+    const select = trigger.closest('.custom-select');
+    
+    // Toggle dropdown
+    trigger.addEventListener('click', () => {
+        // Close other dropdowns first
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        
+        // Toggle this dropdown
+        select.classList.toggle('active');
+    });
+    
+    // Handle option selection
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            
+            // Update label and close dropdown
+            label.textContent = text;
+            select.classList.remove('active');
+            
+            // Update value display mode and re-render
+            appState.valueNormalization = value;
+            tradeState.teams.forEach(team => renderTeamRoster(team.rosterId, team.listElId));
+        });
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
+function updateTradeDisplayOptionLabels() {
+    // Update projection mode label
+    const projectionModeLabel = document.getElementById('tradeProjectionModeLabel');
+    if (projectionModeLabel) {
+        switch (appState.projectionMode) {
+            case 'week':
+                projectionModeLabel.textContent = 'Weekly Projection';
+                break;
+            case 'average':
+                projectionModeLabel.textContent = 'Weekly Average';
+                break;
+            case 'season':
+                projectionModeLabel.textContent = 'Season Total';
+                break;
+        }
+    }
+    
+    // Update value display label
+    const valueDisplayLabel = document.getElementById('tradeValueDisplayLabel');
+    if (valueDisplayLabel) {
+        switch (appState.valueNormalization) {
+            case 'raw':
+                valueDisplayLabel.textContent = 'Raw Values';
+                break;
+            case 'normalized':
+                valueDisplayLabel.textContent = 'Normalized (0-100)';
+                break;
+        }
+    }
+}
+
 function addTradeTeam(rosterId = null) {
     if (tradeState.teams.length >= 3) return;
 
@@ -1026,6 +1189,9 @@ function addTradeTeam(rosterId = null) {
 
     renderTeamRoster(rosterId, `${columnId}-list`);
     calculateAndDisplayTrade();
+    
+    // Update the trade interface layout classes
+    updateTradeInterfaceLayout();
 }
 
 function removeTradeTeam(teamIndex) {
@@ -1062,6 +1228,26 @@ function removeTradeTeam(teamIndex) {
     
     // Recalculate and display trade
     calculateAndDisplayTrade();
+    
+    // Update the trade interface layout classes
+    updateTradeInterfaceLayout();
+}
+
+function updateTradeInterfaceLayout() {
+    const tradeInterface = document.getElementById('tradeInterface');
+    const teamCount = tradeState.teams.length;
+    
+    // Remove existing layout classes
+    tradeInterface.classList.remove('one-team', 'two-teams', 'three-teams');
+    
+    // Add appropriate layout class based on team count
+    if (teamCount === 1) {
+        tradeInterface.classList.add('one-team');
+    } else if (teamCount === 2) {
+        tradeInterface.classList.add('two-teams');
+    } else if (teamCount === 3) {
+        tradeInterface.classList.add('three-teams');
+    }
 }
 
 function handleTeamChange(newRosterId, teamIndex) {
@@ -1082,6 +1268,9 @@ function handleTeamChange(newRosterId, teamIndex) {
 
     renderAllTeamRosters();
     calculateAndDisplayTrade();
+    
+    // Update the trade interface layout classes
+    updateTradeInterfaceLayout();
 }
 
 function renderAllTeamRosters() {
@@ -1226,6 +1415,16 @@ function createTradePlayerRow(player, rosterId) {
         projectionText = projectionValue.toFixed(1);
     }
     
+    // Apply value normalization logic based on appState.valueNormalization
+    let displayValue = player.value;
+    if (appState.valueNormalization === 'normalized' && player.rawValue !== undefined) {
+        // If normalization is requested and rawValue is available, normalize it
+        displayValue = normalizeValue(player.rawValue, getMaxPlayerValue(allData.playerValues));
+    } else if (appState.valueNormalization === 'normalized') {
+        // If normalization is requested but no rawValue, use the current value (assuming it's already normalized)
+        displayValue = player.value;
+    }
+    
     return `
     <div class="trade-player-row" data-player-id="${player.id}" data-roster-id="${rosterId}">
         <input type="checkbox" id="trade-${rosterId}-${player.id}">
@@ -1235,7 +1434,7 @@ function createTradePlayerRow(player, rosterId) {
         </div>
         <div class="position-badge">${player.position}</div>
         <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
-        <div class="player-value ${getValueClass(player.value, player.position, appState.valueNormalization === 'normalized')}">${formatValue(player.value, appState.valueNormalization === 'normalized')}</div>
+        <div class="player-value ${getValueClass(displayValue, player.position, appState.valueNormalization === 'normalized')}">${formatValue(displayValue, appState.valueNormalization === 'normalized')}</div>
     </div>`;
 }
 
@@ -1319,6 +1518,70 @@ function updateTradeState(fromRosterId, toRosterId, playerId, isAdding) {
     calculateAndDisplayTrade();
 }
 
+function removePlayerFromTrade(playerId, rosterId, type) {
+    // Find the team that has this player in their trade parts
+    const team = tradeState.teams.find(t => t.rosterId === rosterId);
+    if (!team) return;
+    
+    // Remove player from both sending and receiving maps
+    if (type === 'sending') {
+        tradeState.tradeParts[rosterId].sending.delete(playerId);
+    } else if (type === 'receiving') {
+        tradeState.tradeParts[rosterId].receiving.delete(playerId);
+    }
+    
+    // Also remove from the other team's corresponding map
+    tradeState.teams.forEach(otherTeam => {
+        if (otherTeam.rosterId !== rosterId) {
+            if (type === 'sending') {
+                tradeState.tradeParts[otherTeam.rosterId].receiving.delete(playerId);
+            } else if (type === 'receiving') {
+                tradeState.tradeParts[otherTeam.rosterId].sending.delete(playerId);
+            }
+        }
+    });
+    
+    // Update the trade display
+    calculateAndDisplayTrade();
+    
+    // Also update the checkbox in the main roster view
+    const playerRow = document.querySelector(`[data-player-id="${playerId}"]`);
+    if (playerRow) {
+        const checkbox = playerRow.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            checkbox.checked = false;
+            playerRow.classList.remove('involved');
+        }
+    }
+}
+
+function createPlayerCard(player, type, rosterId) {
+    const espnId = allData.espnIdMap[player.id];
+    const projection = espnId ? allData.projectionData[espnId] : null;
+    let projectionValue = 0;
+    let projectionText = 'N/A';
+    if (projection) {
+        if (appState.projectionMode === 'week') projectionValue = projection.weekProjection;
+        else if (appState.projectionMode === 'average') projectionValue = projection.seasonProjection;
+        else projectionValue = projection.seasonProjection * 17;
+        projectionText = projectionValue.toFixed(1);
+    }
+    
+    return `
+    <div class="trade-summary-player-card ${type}" data-player-id="${player.id}" data-roster-id="${rosterId}">
+        <div class="player-info">
+            <div class="player-name">${player.name}</div>
+            <div class="player-details">${player.team}</div>
+        </div>
+        <div class="position-badge">${player.position}</div>
+        <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
+        <div class="player-value ${getValueClass(player.value, player.position, appState.valueNormalization === 'normalized')}">${formatValue(player.value, appState.valueNormalization === 'normalized')}</div>
+        <button class="remove-player-btn" onclick="removePlayerFromTrade('${player.id}', '${rosterId}', '${type}')" title="Remove from trade">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>`;
+}
+
 function calculateAndDisplayTrade() {
     const summaryContainer = document.getElementById('tradeSummary');
     let teamsSummaryData = [];
@@ -1352,25 +1615,98 @@ function calculateAndDisplayTrade() {
                 }
             }
         });
-        teamsSummaryData.push({ rosterId, netValue: receivingTotal - sendingTotal, taxInfo });
+        teamsSummaryData.push({ 
+            rosterId, 
+            netValue: receivingTotal - sendingTotal, 
+            taxInfo,
+            sending: sendingArray,
+            receiving: receivingArray
+        });
     });
     
-    summaryContainer.innerHTML = '<div class="trade-summary-teams"></div>';
+    summaryContainer.innerHTML = '<div class="trade-summary-teams"></div><div class="trade-summary-players"></div>';
     const teamsContainer = summaryContainer.querySelector('.trade-summary-teams');
+    const playersContainer = summaryContainer.querySelector('.trade-summary-players');
+    
+    // Display team summaries
     teamsSummaryData.forEach(data => {
         const teamInfo = allData.processedRosters.find(r => r.rosterId === data.rosterId);
-        const barPercent = Math.max(0, Math.min(100, (data.netValue + 5000) / 100));
+        
+        // Calculate total value being sent for threshold comparison
+        const totalValueSent = data.sending.reduce((sum, p) => sum + p.rawValue, 0);
+        const threshold = totalValueSent * 0.05; // 5% of total value being sent
+        
+        // Determine color based on net value and threshold
+        let valueColor;
+        if (data.netValue > 0) {
+            valueColor = '#22c55e'; // Green for positive
+        } else if (data.netValue >= -threshold) {
+            valueColor = '#fbbf24'; // Yellow for negative but within 5% threshold
+        } else {
+            valueColor = '#dc2626'; // Red for more negative than 5% threshold
+        }
+        
         const summaryEl = document.createElement('div');
         summaryEl.className = 'trade-summary-team';
         summaryEl.innerHTML = `
             <div class="summary-team-name">${teamInfo.teamName}</div>
-            <div class="summary-net-value" style="color: ${data.netValue >= 0 ? 'var(--accent-primary)' : '#dc2626'};">
+            <div class="summary-net-value" style="color: ${valueColor};">
                 ${data.netValue >= 0 ? '+' : ''}${Math.round(data.netValue).toLocaleString()}
             </div>
-            <div class="summary-tax-info">${data.taxInfo}</div>
-            <div class="summary-power-bar-container"><div class="summary-power-bar" style="width: ${barPercent}%;"></div></div>`;
+            <div class="summary-tax-info">${data.taxInfo}</div>`;
         teamsContainer.appendChild(summaryEl);
     });
+
+    // Display player cards only if there are actual trades
+    const hasAnyTrades = teamsSummaryData.some(data => data.sending.length > 0 || data.receiving.length > 0);
+    
+    if (hasAnyTrades) {
+        teamsSummaryData.forEach(data => {
+            const teamInfo = allData.processedRosters.find(r => r.rosterId === data.rosterId);
+            const teamPlayersEl = document.createElement('div');
+            teamPlayersEl.className = 'trade-summary-team-players';
+            
+
+            
+            // Players being sent away
+            if (data.sending.length > 0) {
+                const sendingSection = document.createElement('div');
+                sendingSection.className = 'trade-summary-section';
+                sendingSection.innerHTML = '<h4 class="trade-summary-section-title sending">Sending Away</h4>';
+                
+                const sendingPlayers = document.createElement('div');
+                sendingPlayers.className = 'trade-summary-player-cards';
+                            data.sending.forEach(player => {
+                const playerCardHtml = createPlayerCard(player, 'sending', data.rosterId);
+                const playerCardEl = document.createElement('div');
+                playerCardEl.innerHTML = playerCardHtml;
+                sendingPlayers.appendChild(playerCardEl.firstElementChild);
+            });
+                sendingSection.appendChild(sendingPlayers);
+                teamPlayersEl.appendChild(sendingSection);
+            }
+            
+            // Players being received
+            if (data.receiving.length > 0) {
+                const receivingSection = document.createElement('div');
+                receivingSection.className = 'trade-summary-section';
+                receivingSection.innerHTML = '<h4 class="trade-summary-section-title receiving">Receiving</h4>';
+                
+                const receivingPlayers = document.createElement('div');
+                receivingPlayers.className = 'trade-summary-player-cards';
+                            data.receiving.forEach(player => {
+                const playerCardHtml = createPlayerCard(player, 'receiving', data.rosterId);
+                const playerCardEl = document.createElement('div');
+                playerCardEl.innerHTML = playerCardHtml;
+                receivingPlayers.appendChild(playerCardEl.firstElementChild);
+            });
+                receivingSection.appendChild(receivingPlayers);
+                teamPlayersEl.appendChild(receivingSection);
+            }
+            
+            playersContainer.appendChild(teamPlayersEl);
+        });
+    }
 
     const allInvolvedPlayerIds = new Set();
     Object.values(tradeState.tradeParts).forEach(part => {
