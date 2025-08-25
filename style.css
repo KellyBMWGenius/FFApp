@@ -300,6 +300,18 @@ body {
     z-index: 10000;
 }
 
+/* Ensure all direct children have consistent height */
+.controls-header > * {
+    height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+/* Allow toggle buttons to be slightly taller for better text breathing room */
+.controls-header .toggle-buttons {
+    height: 44px;
+}
+
 /* General control grouping & items */
 .control-item {
     display: flex;
@@ -312,6 +324,9 @@ body {
     color: var(--text-secondary);
     white-space: nowrap;
     font-weight: 500;
+    height: 40px;
+    display: flex;
+    align-items: center;
 }
 
 /* Custom select styling */
@@ -323,6 +338,7 @@ body {
     min-width: 140px;
     box-shadow: var(--shadow);
     transition: border-color 0.2s ease;
+    height: 40px; /* Consistent height */
 }
 
 .custom-select:hover {
@@ -330,7 +346,8 @@ body {
 }
 
 .select-trigger {
-    padding: 8px 12px;
+    padding: 0 12px; /* Remove vertical padding, let height control it */
+    height: 40px; /* Match parent height */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -419,17 +436,22 @@ body {
     border-radius: 6px;
     overflow: hidden;
     border: 1px solid var(--border-primary);
+    height: 44px; /* Slightly taller for better text breathing room */
 }
 
 .toggle-buttons button {
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    padding: 8px 16px;
+    padding: 0 16px; /* Remove vertical padding, let height control it */
+    height: 44px; /* Match parent height */
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.2s, color 0.2s;
     border-right: 1px solid var(--border-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .toggle-buttons button:last-child {
@@ -462,7 +484,8 @@ body {
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     color: var(--text-primary);
-    padding: 8px 12px;
+    padding: 0 12px;
+    height: 40px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
@@ -561,6 +584,11 @@ body {
     position: relative;
     z-index: 10001;
     overflow: visible;
+}
+
+/* View mode dropdown specific styling - make it wider for longer text */
+#sortBySelect {
+    min-width: 200px !important;
 }
 
 /* Ensure the controls header doesn't clip dropdowns */
@@ -673,20 +701,44 @@ body {
 .roster-header {
     background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
     color: white;
-    padding: 1rem;
+    padding: 2rem 1rem 2rem 1rem;
     text-align: center;
     position: relative;
     overflow: hidden;
 }
 
-.rank-badge {
+.ranking-container {
     position: absolute;
-    top: 0.5rem;
+    top: 1rem;
     right: 0.5rem;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.ranking-label {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px 0 0 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    line-height: 1;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+}
+
+.rank-badge {
     background: rgba(255, 255, 255, 0.2);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
+    border-radius: 0 4px 4px 0;
     width: 2rem;
     height: 2rem;
     display: flex;
@@ -694,6 +746,13 @@ body {
     justify-content: center;
     font-weight: 700;
     font-size: 0.9rem;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.rank-badge:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
 }
 
 .roster-header::before {
@@ -710,33 +769,51 @@ body {
 .roster-header h3 {
     font-size: 1.1rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
+    margin: 0;
+    text-align: left;
+    padding-left: 0.5rem;
+    position: absolute;
+    top: 1rem;
+    left: 0.5rem;
+    line-height: 1;
+    height: 2rem;
+    display: flex;
+    align-items: center;
 }
 
-.roster-stats {
+
+
+.roster-body {
+    padding: 0.75rem;
+}
+
+.roster-subheader {
+    background: var(--bg-column-headers);
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-primary);
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
 }
 
-.stat {
+.roster-subheader .stat {
     text-align: center;
     padding: 0.4rem;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-player-row);
     border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--border-secondary);
 }
 
-.stat-value {
+.roster-subheader .stat-value {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--text-primary);
     margin-bottom: 0.15rem;
 }
 
-.stat div:last-child {
+.roster-subheader .stat div:last-child {
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-align: center;
@@ -746,8 +823,36 @@ body {
     align-items: center;
 }
 
-.roster-body {
-    padding: 0.75rem;
+/* Rank-based color coding for stat labels */
+.roster-subheader .stat.rank-1,
+.roster-subheader .stat.rank-2,
+.roster-subheader .stat.rank-3 {
+    border: 2px solid #10B981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+
+.roster-subheader .stat.rank-4,
+.roster-subheader .stat.rank-5,
+.roster-subheader .stat.rank-6,
+.roster-subheader .stat.rank-7 {
+    border: 2px solid #F59E0B;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.roster-subheader .stat.rank-8,
+.roster-subheader .stat.rank-9,
+.roster-subheader .stat.rank-10 {
+    border: 2px solid #EF4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Handle any additional ranks beyond 10 if needed */
+.roster-subheader .stat.rank-11,
+.roster-subheader .stat.rank-12,
+.roster-subheader .stat.rank-13,
+.roster-subheader .stat.rank-14 {
+    border: 2px solid #EF4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
 }
 
 /* Position sections */
@@ -1073,7 +1178,8 @@ body {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-primary);
     color: var(--text-primary);
-    padding: 0.6rem 1rem;
+    padding: 0 1rem; /* Remove vertical padding, let height control it */
+    height: 40px; /* Consistent height */
     border-radius: 10px;
     cursor: pointer;
     display: flex;
@@ -2508,6 +2614,8 @@ body {
     border: 3px solid var(--accent-color);
     box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.4);
 }
+
+
 
 /* Login Modal Styles */
 .login-modal {

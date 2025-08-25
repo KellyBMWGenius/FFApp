@@ -655,13 +655,41 @@ function applyFiltersAndRender() {
     
     filteredRosters = filteredRosters.map(roster => {
         let players = roster.players;
-        if (appState.currentFilter === 'starters') players = roster.players.filter(p => p.isStarter);
-        else if (appState.currentFilter === 'bench') players = roster.players.filter(p => !p.isStarter);
-        const organized = appState.viewMode === 'positional' ? organizePlayersByActualPosition(players) : organizePlayersByPosition(players);
+        let organized = appState.viewMode === 'positional' ? organizePlayersByActualPosition(players) : organizePlayersByPosition(players);
+        
+        // For starters filter, use the optimal starters from organized data, not Sleeper starters
+        if (appState.currentFilter === 'starters') {
+            const optimalStarters = [];
+            CONFIG.positions.starters.forEach(positionDef => {
+                const positionPlayers = organized.starters[positionDef.name] || [];
+                optimalStarters.push(...positionPlayers);
+            });
+            players = optimalStarters;
+            // Re-organize with only the optimal starters
+            organized = appState.viewMode === 'positional' ? organizePlayersByActualPosition(players) : organizePlayersByPosition(players);
+        } else if (appState.currentFilter === 'bench') {
+            // For bench filter, get all players that are NOT in the optimal starters
+            const optimalStarters = [];
+            CONFIG.positions.starters.forEach(positionDef => {
+                const positionPlayers = organized.starters[positionDef.name] || [];
+                optimalStarters.push(...positionPlayers);
+            });
+            const optimalStarterIds = new Set(optimalStarters.map(p => p.id));
+            players = players.filter(p => !optimalStarterIds.has(p.id));
+            organized = appState.viewMode === 'positional' ? organizePlayersByActualPosition(players) : organizePlayersByPosition(players);
+        }
+        
         return { ...roster, organized };
     });
+    
     console.log('Sorting teams by:', appState.teamSort);
-    filteredRosters.sort((a, b) => {
+    
+    // First, separate user's team from other teams
+    const userTeam = filteredRosters.find(r => r.user?.user_id === userAuth.userId);
+    const otherTeams = filteredRosters.filter(r => r.user?.user_id !== userAuth.userId);
+    
+    // Sort other teams by the selected criteria
+    otherTeams.sort((a, b) => {
         switch (appState.teamSort) {
             case 'starter-value': return b.stats.starterValue - a.stats.starterValue;
             case 'positional-score': return calculateOverallPositionalScore(b.stats.positionalScores) - calculateOverallPositionalScore(a.stats.positionalScores);
@@ -669,11 +697,15 @@ function applyFiltersAndRender() {
             default: return b.stats.totalValue - a.stats.totalValue;
         }
     });
+    
+    // Reconstruct the array with user's team first, then sorted other teams
+    filteredRosters = userTeam ? [userTeam, ...otherTeams] : otherTeams;
+    
     console.log('Sorted teams:', filteredRosters.map(r => ({ name: r.teamName, sortValue: appState.teamSort === 'starter-value' ? r.stats.starterValue : appState.teamSort === 'positional-score' ? calculateOverallPositionalScore(r.stats.positionalScores) : r.stats.totalValue })));
     
     // Add visual indicator of sort order
     filteredRosters.forEach((roster, index) => {
-        console.log(`${index + 1}. ${roster.teamName} - Sort Value: ${appState.teamSort === 'starter-value' ? roster.stats.starterValue : appState.teamSort === 'positional-score' ? calculateOverallPositionalScore(roster.stats.positionalScores) : roster.stats.totalValue}`);
+        console.log(`${index + 1}. ${roster.teamName} - Sort Value: ${appState.teamSort === 'starter-value' ? roster.stats.starterValue : appState.teamSort === 'positional-score' ? calculateOverallPositionalScore(roster.stats.positionalScores) : roster.stats.totalValue }`);
     });
     
     renderRosters(filteredRosters);
@@ -694,11 +726,42 @@ function renderRosters(rosters) {
     // Set the team count attribute for responsive layout
     container.setAttribute('data-team-count', rosters.length.toString());
     
+
+    
     const maxData = appState.viewMode === 'positional' ? getMaxPlayersPerPosition(rosters) : null;
+    
+    // Calculate actual ranks based on sort criteria (including user's team)
+    const allTeamsSorted = [...rosters].sort((a, b) => {
+        switch (appState.teamSort) {
+            case 'value':
+                return b.stats.totalValue - a.stats.totalValue;
+            case 'starter-value':
+                return b.stats.starterValue - a.stats.starterValue;
+            case 'positional-score':
+                const aScore = Object.values(a.stats.positionalScores || {}).reduce((sum, pos) => sum + pos.normalized, 0);
+                const bScore = Object.values(b.stats.positionalScores || {}).reduce((sum, pos) => sum + pos.normalized, 0);
+                return bScore - aScore;
+            case 'name':
+                return a.teamName.localeCompare(b.teamName);
+            default:
+                return b.stats.totalValue - a.stats.totalValue;
+        }
+    });
+    
+    // Create a map of roster ID to actual rank
+    const rankMap = new Map();
+    allTeamsSorted.forEach((roster, index) => {
+        rankMap.set(roster.rosterId, index + 1);
+    });
+    
+    // Calculate individual stat rankings
+    const statRankings = calculateIndividualStatRankings(rosters);
     
     rosters.forEach((roster, index) => {
         console.log(`Creating roster card ${index + 1}:`, { id: roster.rosterId, name: roster.teamName });
-        const card = createRosterCard(roster, maxData, index + 1);
+        // Use actual rank from the sort criteria for ALL teams
+        const actualRank = rankMap.get(roster.rosterId);
+        const card = createRosterCard(roster, maxData, actualRank, statRankings);
         card.setAttribute('data-roster-id', roster.rosterId);
         container.appendChild(card);
     });
@@ -729,7 +792,37 @@ function getMaxPlayersPerPosition(rosters) {
     return { counts: maxCounts, heights: maxHeights };
 }
 
-function createRosterCard(roster, maxData = null, rank = null) {
+function calculateIndividualStatRankings(rosters) {
+    // Calculate rankings for each individual stat
+    const totalValueRankings = new Map();
+    const starterValueRankings = new Map();
+    const weeklyPointsRankings = new Map();
+    
+    // Sort rosters by each stat and create ranking maps
+    const totalValueSorted = [...rosters].sort((a, b) => b.stats.totalValue - a.stats.totalValue);
+    const starterValueSorted = [...rosters].sort((a, b) => b.stats.starterValue - a.stats.starterValue);
+    const weeklyPointsSorted = [...rosters].sort((a, b) => b.stats.totalWeeklyPoints - a.stats.totalWeeklyPoints);
+    
+    totalValueSorted.forEach((roster, index) => {
+        totalValueRankings.set(roster.rosterId, index + 1);
+    });
+    
+    starterValueSorted.forEach((roster, index) => {
+        starterValueRankings.set(roster.rosterId, index + 1);
+    });
+    
+    weeklyPointsSorted.forEach((roster, index) => {
+        weeklyPointsRankings.set(roster.rosterId, index + 1);
+    });
+    
+    return {
+        totalValue: totalValueRankings,
+        starterValue: starterValueRankings,
+        weeklyPoints: weeklyPointsRankings
+    };
+}
+
+function createRosterCard(roster, maxData = null, rank = null, statRankings = null) {
     const card = document.createElement('div');
     card.className = 'roster-card';
     
@@ -740,16 +833,28 @@ function createRosterCard(roster, maxData = null, rank = null) {
     
     card.setAttribute('data-view-mode', appState.viewMode);
 
-    const rankHTML = rank ? `<div class="rank-badge">#${rank}</div>` : '';
+    let rankHTML = '';
+    if (rank) {
+        rankHTML = `<div class="rank-badge">${rank}</div>`;
+    }
+    // Get the ranking label based on sort criteria
+    const rankingLabel = appState.teamSort === 'value' ? 'Total Value' : 
+                        appState.teamSort === 'starter-value' ? 'Starter Value' : 
+                        appState.teamSort === 'positional-score' ? 'Positional Score' : 
+                        'Alphabetical';
+    
     card.innerHTML = `
         <div class="roster-header">
-            ${rankHTML}
-            <h3>${roster.teamName}</h3>
-            <div class="roster-stats">
-                <div class="stat"><div class="stat-value">${formatValue(roster.stats.totalValue)}</div><div>Total Value</div></div>
-                <div class="stat"><div class="stat-value">${formatValue(roster.stats.starterValue)}</div><div>Starter Value</div></div>
-                <div class="stat"><div class="stat-value">${roster.stats.totalWeeklyPoints.toFixed(1)}</div><div>Total Weekly Points</div></div>
+            <div class="ranking-container">
+                <div class="ranking-label">${rankingLabel}</div>
+                ${rankHTML}
             </div>
+            <h3>${roster.teamName}</h3>
+        </div>
+        <div class="roster-subheader">
+            <div class="stat rank-${statRankings ? statRankings.totalValue.get(roster.rosterId) : rank}"><div class="stat-value">${formatValue(roster.stats.totalValue)}</div><div>Total Value</div></div>
+            <div class="stat rank-${statRankings ? statRankings.starterValue.get(roster.rosterId) : rank}"><div class="stat-value">${formatValue(roster.stats.starterValue)}</div><div>Starter Value</div></div>
+            <div class="stat rank-${statRankings ? statRankings.weeklyPoints.get(roster.rosterId) : rank}"><div class="stat-value">${roster.stats.totalWeeklyPoints.toFixed(1)}</div><div>Weekly Points</div></div>
         </div>
         <div class="roster-body">
             ${createPositionSections(roster, maxData)}
@@ -817,6 +922,20 @@ function createPositionSections(roster, maxData = null) {
         });
     } else {
         const organized = roster.organized || {};
+        
+        // Handle bench-only filter differently - just show a simple bench list
+        if (appState.currentFilter === 'bench') {
+            // For bench-only, use the filtered players (which are already the bench players)
+            const benchPlayers = roster.players || [];
+            if (benchPlayers.length > 0) {
+                html += '<div class="position-section"><div class="position-header">ALL PLAYERS <span class="position-count">' + benchPlayers.length + '</span></div>';
+                html += '<div class="column-headers"><div class="header-player">Player</div><div class="header-position">Position</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>';
+                benchPlayers.forEach(player => { html += createPlayerRow(player); });
+                html += '</div>';
+            }
+            return html;
+        }
+        
         html += '<div class="position-section"><div class="position-header">STARTERS <span class="position-count">10</span></div>';
         html += '<div class="column-headers"><div class="header-player">Player</div><div class="header-position">Position</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>';
         CONFIG.positions.starters.forEach(positionDef => {
@@ -828,7 +947,8 @@ function createPositionSections(roster, maxData = null) {
             html += '</div>';
         });
         html += '</div>';
-        if (organized.bench && organized.bench.length > 0) {
+        // Only show bench if not filtering to starters only
+        if (organized.bench && organized.bench.length > 0 && appState.currentFilter !== 'starters') {
             html += `<div class="position-section"><div class="position-header">BENCH <span class="position-count">${organized.bench.length}</span></div>`;
             html += '<div class="column-headers"><div class="header-player">Player</div><div class="header-position">Position</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>';
             organized.bench.forEach(player => { html += createPlayerRow(player); });
