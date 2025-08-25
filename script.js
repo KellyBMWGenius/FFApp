@@ -43,8 +43,7 @@ let allData = {
 
 let appState = {
     selectedTeams: new Set(['all']),
-    currentFilter: 'all',
-    viewMode: 'optimal',
+    rosterView: 'optimal',
     teamSort: 'value',
     searchQuery: '',
     projectionMode: 'average',
@@ -86,7 +85,7 @@ function initializeHorizontalView() {
         if (rostersContainer && horizontalViewBtn) {
             rostersContainer.classList.add('horizontal-view');
             horizontalViewBtn.classList.add('active');
-            horizontalViewBtn.innerHTML = '<i class="fas fa-th"></i><span>Grid View</span>';
+            horizontalViewBtn.innerHTML = '<i class="fas fa-th"></i>';
             horizontalViewBtn.title = 'Switch to vertical grid view';
             
             if (allData.processedRosters && allData.processedRosters.length > 0) {
@@ -113,14 +112,14 @@ function toggleHorizontalView() {
     if (appState.horizontalView) {
         rostersContainer.classList.add('horizontal-view');
         horizontalViewBtn.classList.add('active');
-        horizontalViewBtn.innerHTML = '<i class="fas fa-th"></i><span>Grid View</span>';
+        horizontalViewBtn.innerHTML = '<i class="fas fa-th"></i>';
         horizontalViewBtn.title = 'Switch to vertical grid view';
         const teamCount = allData.processedRosters.length;
         rostersContainer.setAttribute('data-team-count', `${teamCount} Teams - Use arrow keys or scroll to navigate`);
     } else {
         rostersContainer.classList.remove('horizontal-view');
         horizontalViewBtn.classList.remove('active');
-        horizontalViewBtn.innerHTML = '<i class="fas fa-arrows-alt-h"></i><span>Horizontal View</span>';
+        horizontalViewBtn.innerHTML = '<i class="fas fa-arrows-alt-h"></i>';
         horizontalViewBtn.title = 'Toggle horizontal view for side-by-side roster comparison';
         rostersContainer.removeAttribute('data-team-count');
     }
@@ -271,15 +270,45 @@ async function fetchFantasyCalcValues() {
 
 async function fetchProjectionData() {
     try {
-        const response = await fetch('espndata/player_data.json');
+        const response = await fetch(`espndata/player_data.json?t=${Date.now()}`);
         const data = await response.json();
         const projectionMap = {};
+        
+        // Extract week number from the first player's data
+        let weekNumber = 1; // Default fallback
+        if (data.length > 0) {
+            // Extract week number from the key (e.g., "week_1_projection" -> 1)
+            const weekKey = Object.keys(data[0]).find(key => key.startsWith('week_') && key.includes('_projection'));
+            if (weekKey) {
+                const match = weekKey.match(/week_(\d+)_projection/);
+                if (match) {
+                    weekNumber = parseInt(match[1]);
+                }
+            }
+        }
+        
+        // Store week number globally for use in labels
+        window.currentWeekNumber = weekNumber;
+        
         data.forEach(player => {
+            const weekKey = `week_${weekNumber}_projection`;
             projectionMap[player.playerId] = {
-                weekProjection: player.week_1_projection?.projected_points || 0,
+                weekProjection: player[weekKey]?.projected_points || 0,
                 seasonProjection: player.season_projection?.projected_avg_points || 0
             };
         });
+        
+        console.log('Projection data loaded:', {
+            weekNumber,
+            totalPlayers: data.length,
+            samplePlayer: data[0],
+            projectionMapSize: Object.keys(projectionMap).length,
+            sampleProjection: projectionMap[data[0]?.playerId]
+        });
+        
+        // Update dropdown options with the correct week number
+        updateProjectionModeDropdownOptions(weekNumber);
+        
         return projectionMap;
     } catch (error) {
         console.warn('Projection data not available, continuing without it');
@@ -321,6 +350,9 @@ function processRosterData() {
         const totalWeeklyPoints = starterPlayers.reduce((sum, player) => {
             const espnId = allData.espnIdMap[player.id];
             const projection = espnId ? allData.projectionData[espnId] : null;
+            if (espnId && !projection) {
+                console.warn('Missing projection for player:', player.name, 'espnId:', espnId);
+            }
             return sum + (projection?.seasonProjection || 0);
         }, 0);
 
@@ -359,10 +391,8 @@ function processRosterData() {
                 return b.stats.totalValue - a.stats.totalValue;
             case 'starter-value':
                 return b.stats.starterValue - a.stats.starterValue;
-            case 'positional-score':
-                const aScore = Object.values(a.stats.positionalScores).reduce((sum, pos) => sum + pos.normalized, 0);
-                const bScore = Object.values(b.stats.positionalScores).reduce((sum, pos) => sum + pos.normalized, 0);
-                return bScore - aScore;
+            case 'weekly-points':
+                return b.stats.totalWeeklyPoints - a.stats.totalWeeklyPoints;
             case 'name':
                 return a.teamName.localeCompare(b.teamName);
             default:
@@ -655,28 +685,24 @@ function applyFiltersAndRender() {
     
     filteredRosters = filteredRosters.map(roster => {
         let players = roster.players;
-        let organized = appState.viewMode === 'positional' ? organizePlayersByActualPosition(players) : organizePlayersByPosition(players);
+        let organized;
         
-        // For starters filter, use the optimal starters from organized data, not Sleeper starters
-        if (appState.currentFilter === 'starters') {
-            const optimalStarters = [];
-            CONFIG.positions.starters.forEach(positionDef => {
-                const positionPlayers = organized.starters[positionDef.name] || [];
-                optimalStarters.push(...positionPlayers);
-            });
-            players = optimalStarters;
-            // Re-organize with only the optimal starters
-            organized = appState.viewMode === 'positional' ? organizePlayersByActualPosition(players) : organizePlayersByPosition(players);
-        } else if (appState.currentFilter === 'bench') {
-            // For bench filter, get all players that are NOT in the optimal starters
-            const optimalStarters = [];
-            CONFIG.positions.starters.forEach(positionDef => {
-                const positionPlayers = organized.starters[positionDef.name] || [];
-                optimalStarters.push(...positionPlayers);
-            });
-            const optimalStarterIds = new Set(optimalStarters.map(p => p.id));
-            players = players.filter(p => !optimalStarterIds.has(p.id));
-            organized = appState.viewMode === 'positional' ? organizePlayersByActualPosition(players) : organizePlayersByPosition(players);
+        // Handle the new combined view system
+        if (appState.rosterView === 'optimal') {
+            // Optimal Roster: starters are filled correctly and bench is sorted by value
+            organized = organizePlayersByPosition(players);
+        } else if (appState.rosterView === 'all-players') {
+            // All Players: straight high-to-low list of every player
+            organized = organizePlayersByPosition(players);
+            // Sort all players by value (starters and bench combined)
+            const allPlayers = [];
+            Object.values(organized.starters).forEach(positionPlayers => allPlayers.push(...positionPlayers));
+            if (organized.bench) allPlayers.push(...organized.bench);
+            allPlayers.sort((a, b) => b.value - a.value);
+            organized = { all: allPlayers };
+        } else if (appState.rosterView === 'position-groups') {
+            // Position Groups: players grouped by position with overall scores
+            organized = organizePlayersByActualPosition(players);
         }
         
         return { ...roster, organized };
@@ -692,7 +718,7 @@ function applyFiltersAndRender() {
     otherTeams.sort((a, b) => {
         switch (appState.teamSort) {
             case 'starter-value': return b.stats.starterValue - a.stats.starterValue;
-            case 'positional-score': return calculateOverallPositionalScore(b.stats.positionalScores) - calculateOverallPositionalScore(a.stats.positionalScores);
+            case 'weekly-points': return b.stats.totalWeeklyPoints - a.stats.totalWeeklyPoints;
             case 'name': return a.teamName.localeCompare(b.teamName);
             default: return b.stats.totalValue - a.stats.totalValue;
         }
@@ -701,11 +727,11 @@ function applyFiltersAndRender() {
     // Reconstruct the array with user's team first, then sorted other teams
     filteredRosters = userTeam ? [userTeam, ...otherTeams] : otherTeams;
     
-    console.log('Sorted teams:', filteredRosters.map(r => ({ name: r.teamName, sortValue: appState.teamSort === 'starter-value' ? r.stats.starterValue : appState.teamSort === 'positional-score' ? calculateOverallPositionalScore(r.stats.positionalScores) : r.stats.totalValue })));
+    console.log('Sorted teams:', filteredRosters.map(r => ({ name: r.teamName, sortValue: appState.teamSort === 'starter-value' ? r.stats.starterValue : appState.teamSort === 'weekly-points' ? r.stats.totalWeeklyPoints : r.stats.totalValue })));
     
     // Add visual indicator of sort order
     filteredRosters.forEach((roster, index) => {
-        console.log(`${index + 1}. ${roster.teamName} - Sort Value: ${appState.teamSort === 'starter-value' ? roster.stats.starterValue : appState.teamSort === 'positional-score' ? calculateOverallPositionalScore(roster.stats.positionalScores) : roster.stats.totalValue }`);
+        console.log(`${index + 1}. ${roster.teamName} - Sort Value: ${appState.teamSort === 'starter-value' ? roster.stats.starterValue : appState.teamSort === 'weekly-points' ? roster.stats.totalWeeklyPoints : roster.stats.totalValue }`);
     });
     
     renderRosters(filteredRosters);
@@ -728,7 +754,7 @@ function renderRosters(rosters) {
     
 
     
-    const maxData = appState.viewMode === 'positional' ? getMaxPlayersPerPosition(rosters) : null;
+    const maxData = appState.rosterView === 'position-groups' ? getMaxPlayersPerPosition(rosters) : null;
     
     // Calculate actual ranks based on sort criteria (including user's team)
     const allTeamsSorted = [...rosters].sort((a, b) => {
@@ -737,10 +763,8 @@ function renderRosters(rosters) {
                 return b.stats.totalValue - a.stats.totalValue;
             case 'starter-value':
                 return b.stats.starterValue - a.stats.starterValue;
-            case 'positional-score':
-                const aScore = Object.values(a.stats.positionalScores || {}).reduce((sum, pos) => sum + pos.normalized, 0);
-                const bScore = Object.values(b.stats.positionalScores || {}).reduce((sum, pos) => sum + pos.normalized, 0);
-                return bScore - aScore;
+            case 'weekly-points':
+                return b.stats.totalWeeklyPoints - a.stats.totalWeeklyPoints;
             case 'name':
                 return a.teamName.localeCompare(b.teamName);
             default:
@@ -831,7 +855,7 @@ function createRosterCard(roster, maxData = null, rank = null, statRankings = nu
         card.classList.add('user-team');
     }
     
-    card.setAttribute('data-view-mode', appState.viewMode);
+            card.setAttribute('data-view-mode', appState.rosterView);
 
     let rankHTML = '';
     if (rank) {
@@ -840,8 +864,9 @@ function createRosterCard(roster, maxData = null, rank = null, statRankings = nu
     // Get the ranking label based on sort criteria
     const rankingLabel = appState.teamSort === 'value' ? 'Total Value' : 
                         appState.teamSort === 'starter-value' ? 'Starter Value' : 
-                        appState.teamSort === 'positional-score' ? 'Positional Score' : 
-                        'Alphabetical';
+                        appState.teamSort === 'weekly-points' ? 'Weekly Points' : 
+                        appState.teamSort === 'name' ? 'Alphabetical' : 
+                        'Total Value';
     
     card.innerHTML = `
         <div class="roster-header">
@@ -865,7 +890,8 @@ function createRosterCard(roster, maxData = null, rank = null, statRankings = nu
 // ** THIS IS ONE OF THE RESTORED FUNCTIONS **
 function createPositionSections(roster, maxData = null) {
     let html = '';
-    if (appState.viewMode === 'positional') {
+    
+    if (appState.rosterView === 'position-groups') {
         const positions = ['QB', 'RB', 'WR', 'TE'];
         const organized = roster.organized || {};
         const positionalScores = roster.stats.positionalScores || {};
@@ -894,8 +920,8 @@ function createPositionSections(roster, maxData = null) {
                 const styleAttr = maxHeight ? `style="min-height: ${maxHeight}px;"` : '';
                 html += `<div class="position-section" data-position="${position}" ${styleAttr}>
                     <div class="position-header">
-                        ${position} <span class="position-count">${players.length}</span>
-                        ${positionScore ? `<span class="position-score score-${getScoreClass(positionScore.normalized, position, allData.processedRosters)}">${positionScore.normalized}</span>` : ''}
+                        ${position} <span class="position-count">Position Count: ${players.length}</span>
+                        ${positionScore ? `<span class="position-score score-${getScoreClass(positionScore.normalized, position, allData.processedRosters)}">Position Score: ${positionScore.normalized}</span>` : ''}
                     </div>
                     <div class="column-headers"><div class="header-player">Player</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>`;
                 
@@ -920,23 +946,20 @@ function createPositionSections(roster, maxData = null) {
                 html += '</div>';
             }
         });
+    } else if (appState.rosterView === 'all-players') {
+        // All Players: straight high-to-low list of every player
+        const allPlayers = roster.organized?.all || [];
+        if (allPlayers.length > 0) {
+            html += '<div class="position-section"><div class="position-header">ALL PLAYERS <span class="position-count">Position Count: ' + allPlayers.length + '</span></div>';
+            html += '<div class="column-headers"><div class="header-player">Player</div><div class="header-position">Position</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>';
+            allPlayers.forEach(player => { html += createPlayerRow(player); });
+            html += '</div>';
+        }
     } else {
+        // Optimal Roster: starters are filled correctly and bench is sorted by value
         const organized = roster.organized || {};
         
-        // Handle bench-only filter differently - just show a simple bench list
-        if (appState.currentFilter === 'bench') {
-            // For bench-only, use the filtered players (which are already the bench players)
-            const benchPlayers = roster.players || [];
-            if (benchPlayers.length > 0) {
-                html += '<div class="position-section"><div class="position-header">ALL PLAYERS <span class="position-count">' + benchPlayers.length + '</span></div>';
-                html += '<div class="column-headers"><div class="header-player">Player</div><div class="header-position">Position</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>';
-                benchPlayers.forEach(player => { html += createPlayerRow(player); });
-                html += '</div>';
-            }
-            return html;
-        }
-        
-        html += '<div class="position-section"><div class="position-header">STARTERS <span class="position-count">10</span></div>';
+        html += '<div class="position-section"><div class="position-header">STARTERS <span class="position-count">Position Count: 10</span></div>';
         html += '<div class="column-headers"><div class="header-player">Player</div><div class="header-position">Position</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>';
         CONFIG.positions.starters.forEach(positionDef => {
             const players = organized.starters[positionDef.name] || [];
@@ -947,9 +970,9 @@ function createPositionSections(roster, maxData = null) {
             html += '</div>';
         });
         html += '</div>';
-        // Only show bench if not filtering to starters only
-        if (organized.bench && organized.bench.length > 0 && appState.currentFilter !== 'starters') {
-            html += `<div class="position-section"><div class="position-header">BENCH <span class="position-count">${organized.bench.length}</span></div>`;
+        // Show bench
+        if (organized.bench && organized.bench.length > 0) {
+            html += `<div class="position-section"><div class="position-header">BENCH <span class="position-count">Position Count: ${organized.bench.length}</span></div>`;
             html += '<div class="column-headers"><div class="header-player">Player</div><div class="header-position">Position</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>';
             organized.bench.forEach(player => { html += createPlayerRow(player); });
             html += '</div>';
@@ -962,6 +985,18 @@ function createPositionSections(roster, maxData = null) {
 function createPlayerRow(player) {
     const espnId = allData.espnIdMap[player.id];
     const projection = espnId ? allData.projectionData[espnId] : null;
+    
+    // Debug logging for projection lookup
+    if (player.name.includes('Saquon') || player.name.includes('Barkley')) {
+        console.log('Projection lookup for', player.name, ':', {
+            playerId: player.id,
+            espnId,
+            projection,
+            projectionMode: appState.projectionMode,
+            allDataKeys: Object.keys(allData.projectionData || {})
+        });
+    }
+    
     let projectionValue = 0;
     let projectionText = 'N/A';
     if (projection) {
@@ -1046,12 +1081,12 @@ function initTradeCalculator() {
                 <label for="tradeProjectionMode">Projection Mode:</label>
                 <div class="custom-select" id="tradeProjectionModeSelect">
                     <div class="select-trigger" id="tradeProjectionModeTrigger">
-                        <span id="tradeProjectionModeLabel">Weekly Average</span>
+                        <span id="tradeProjectionModeLabel">Average</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="select-options" id="tradeProjectionModeOptions">
-                        <div class="select-option" data-value="week">Weekly Projection</div>
-                        <div class="select-option" data-value="average">Weekly Average</div>
+                        <div class="select-option" data-value="week">Week Projection</div>
+                        <div class="select-option" data-value="average">Average</div>
                         <div class="select-option" data-value="season">Season Total</div>
                     </div>
                 </div>
@@ -1298,10 +1333,11 @@ function updateTradeDisplayOptionLabels() {
     if (projectionModeLabel) {
         switch (appState.projectionMode) {
             case 'week':
-                projectionModeLabel.textContent = 'Weekly Projection';
+                const weekNumber = window.currentWeekNumber || 1;
+                projectionModeLabel.textContent = `Week ${weekNumber} Projection`;
                 break;
             case 'average':
-                projectionModeLabel.textContent = 'Weekly Average';
+                projectionModeLabel.textContent = 'Average';
                 break;
             case 'season':
                 projectionModeLabel.textContent = 'Season Total';
@@ -1537,8 +1573,8 @@ function renderTeamRoster(rosterId, listElId) {
             if (players.length > 0) {
                 html += `<div class="position-section">
                     <div class="position-header">
-                        ${position} <span class="position-count">${players.length}</span>
-                        ${positionalScores[position] ? `<span class="position-score score-${getScoreClass(positionalScores[position].normalized, position, allData.processedRosters)}">${positionalScores[position].normalized}</span>` : ''}
+                        ${position} <span class="position-count">Position Count: ${players.length}</span>
+                        ${positionalScores[position] ? `<span class="position-score score-${getScoreClass(positionalScores[position].normalized, position, allData.processedRosters)}">Position Score: ${positionalScores[position].normalized}</span>` : ''}
                     </div>`;
                 players.forEach(player => { 
                     console.log(`Trade Calculator: Creating row for player:`, player);
@@ -1550,7 +1586,7 @@ function renderTeamRoster(rosterId, listElId) {
     } else {
         // Optimal Lineup mode (starter-value) - same as Roster Analyzer
         
-        html += '<div class="position-section"><div class="position-header">STARTERS <span class="position-count">10</span></div>';
+        html += '<div class="position-section"><div class="position-header">STARTERS <span class="position-count">Position Count: 10</span></div>';
         html += '<div class="column-headers"><div class="header-player">Player</div><div class="header-position">Position</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>';
         
         CONFIG.positions.starters.forEach(positionDef => {
@@ -1564,7 +1600,7 @@ function renderTeamRoster(rosterId, listElId) {
         html += '</div>';
         
         if (organized.bench && organized.bench.length > 0) {
-            html += `<div class="position-section"><div class="position-header">BENCH <span class="position-count">${organized.bench.length}</span></div>`;
+            html += `<div class="position-section"><div class="position-header">BENCH <span class="position-count">Position Count: ${organized.bench.length}</span></div>`;
             html += '<div class="column-headers"><div class="header-player">Player</div><div class="header-position">Position</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>';
             organized.bench.forEach(player => { 
                 html += createTradePlayerRow(player, rosterId); 
@@ -2303,26 +2339,12 @@ function setupEventListeners() {
     document.getElementById('refreshBtn').addEventListener('click', loadAllData);
     document.getElementById('teamSelectTrigger').addEventListener('click', toggleTeamSelector);
     document.addEventListener('click', closeTeamSelectorOnOutsideClick);
-    document.querySelectorAll('#position-toggles button').forEach(btn => btn.addEventListener('click', function() {
-        document.querySelectorAll('#position-toggles button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#roster-view-selector button').forEach(btn => btn.addEventListener('click', function() {
+        document.querySelectorAll('#roster-view-selector button').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
-        filterPlayersByPosition(this.getAttribute('data-filter'));
+        handleRosterViewChange(this.getAttribute('data-view'));
     }));
-    const displayOptionsBtn = document.getElementById('display-options-btn');
-    const displayOptionsPanel = document.getElementById('display-options-panel');
-    if (displayOptionsBtn && displayOptionsPanel) {
-        displayOptionsBtn.addEventListener('click', (event) => {
-            event.stopPropagation();
-            displayOptionsPanel.classList.toggle('hidden');
-            displayOptionsBtn.classList.toggle('active', !displayOptionsPanel.classList.contains('hidden'));
-        });
-        document.addEventListener('click', (event) => {
-            if (!displayOptionsPanel.contains(event.target) && !displayOptionsBtn.contains(event.target) && !displayOptionsPanel.classList.contains('hidden')) {
-                displayOptionsPanel.classList.add('hidden');
-                displayOptionsBtn.classList.remove('active');
-            }
-        });
-    }
+
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
     document.getElementById('horizontalViewBtn').addEventListener('click', toggleHorizontalView);
     document.addEventListener('keydown', handleKeyboardShortcuts);
@@ -2330,39 +2352,27 @@ function setupEventListeners() {
     document.getElementById('showRosterAnalyzerBtn').addEventListener('click', () => switchView('analyzer'));
     document.getElementById('showTradeCalculatorBtn').addEventListener('click', () => switchView('trade'));
     
-    // Setup display options dropdowns
-    setupDisplayOptionsDropdowns();
+    // Setup projection mode and value display dropdowns
+    setupProjectionModeDropdown();
+    setupValueDisplayDropdown();
 }
 
-function setupDisplayOptionsDropdowns() {
-    console.log('Setting up display options dropdowns...');
-    
-    // Setup projection mode dropdown
+function setupProjectionModeDropdown() {
     const projectionModeSelect = document.getElementById('projectionModeSelect');
     if (projectionModeSelect) {
         const trigger = projectionModeSelect.querySelector('.select-trigger');
         const options = projectionModeSelect.querySelector('.select-options');
         
-        console.log('Projection mode dropdown:', {
-            select: !!projectionModeSelect,
-            trigger: !!trigger,
-            options: !!options,
-            optionsCount: options?.querySelectorAll('.select-option')?.length
-        });
-        
         if (trigger && options) {
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
-                console.log('Projection mode trigger clicked');
                 projectionModeSelect.classList.toggle('active');
-                console.log('Projection mode active state:', projectionModeSelect.classList.contains('active'));
             });
             
             options.querySelectorAll('.select-option').forEach(option => {
                 option.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const value = option.dataset.value;
-                    console.log('Projection mode option clicked:', value);
                     handleProjectionModeChange(value);
                     projectionModeSelect.classList.remove('active');
                     updateDisplayOptionLabels();
@@ -2371,32 +2381,30 @@ function setupDisplayOptionsDropdowns() {
         }
     }
     
-    // Setup value display dropdown
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!projectionModeSelect?.contains(event.target)) {
+            projectionModeSelect?.classList.remove('active');
+        }
+    });
+}
+
+function setupValueDisplayDropdown() {
     const valueDisplaySelect = document.getElementById('valueDisplaySelect');
     if (valueDisplaySelect) {
         const trigger = valueDisplaySelect.querySelector('.select-trigger');
         const options = valueDisplaySelect.querySelector('.select-options');
         
-        console.log('Value display dropdown:', {
-            select: !!valueDisplaySelect,
-            trigger: !!trigger,
-            options: !!options,
-            optionsCount: options?.querySelectorAll('.select-option')?.length
-        });
-        
         if (trigger && options) {
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
-                console.log('Value display trigger clicked');
                 valueDisplaySelect.classList.toggle('active');
-                console.log('Value display active state:', valueDisplaySelect.classList.contains('active'));
             });
             
             options.querySelectorAll('.select-option').forEach(option => {
                 option.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const value = option.dataset.value;
-                    console.log('Value display option clicked:', value);
                     handleValueNormalizationChange(value);
                     valueDisplaySelect.classList.remove('active');
                     updateDisplayOptionLabels();
@@ -2407,9 +2415,6 @@ function setupDisplayOptionsDropdowns() {
     
     // Close dropdowns when clicking outside
     document.addEventListener('click', (event) => {
-        if (!projectionModeSelect?.contains(event.target)) {
-            projectionModeSelect?.classList.remove('active');
-        }
         if (!valueDisplaySelect?.contains(event.target)) {
             valueDisplaySelect?.classList.remove('active');
         }
@@ -2417,14 +2422,6 @@ function setupDisplayOptionsDropdowns() {
     
     // Initialize labels
     updateDisplayOptionLabels();
-    console.log('Display options dropdowns setup complete');
-    
-    // Test dropdown functionality
-    console.log('Testing dropdown elements:');
-    console.log('Projection Mode Select:', document.getElementById('projectionModeSelect'));
-    console.log('Value Display Select:', document.getElementById('valueDisplaySelect'));
-    console.log('Projection Mode Options:', document.querySelectorAll('#projectionModeOptions .select-option'));
-    console.log('Value Display Options:', document.querySelectorAll('#valueDisplayOptions .select-option'));
 }
 
 function setupCustomDropdowns() {
@@ -2507,10 +2504,7 @@ function setupCustomDropdowns() {
                 if (select.id === 'teamSortBySelect') {
                     console.log('Team sort changed to:', value);
                     appState.teamSort = value;
-                    applyFiltersAndRender();
-                } else if (select.id === 'sortBySelect') {
-                    console.log('View mode changed to:', value);
-                    appState.viewMode = value;
+                    updateTeamSortByLabel();
                     applyFiltersAndRender();
                 }
             });
@@ -2527,6 +2521,28 @@ function setupCustomDropdowns() {
     });
     
     console.log('Custom dropdowns setup complete');
+}
+
+function updateTeamSortByLabel() {
+    const label = document.getElementById('teamSortByLabel');
+    if (label) {
+        switch (appState.teamSort) {
+            case 'value':
+                label.textContent = 'Total Value';
+                break;
+            case 'starter-value':
+                label.textContent = 'Starter Value';
+                break;
+            case 'weekly-points':
+                label.textContent = 'Weekly Points';
+                break;
+            case 'name':
+                label.textContent = 'Team Name';
+                break;
+            default:
+                label.textContent = 'Total Value';
+        }
+    }
 }
 
 function toggleTeamSelector() {
@@ -2587,8 +2603,8 @@ function setupTeamSelectorEventListeners() {
     });
 }
 
-function filterPlayersByPosition(filter) {
-    appState.currentFilter = filter;
+function handleRosterViewChange(view) {
+    appState.rosterView = view;
     applyFiltersAndRender();
 }
 
@@ -2602,6 +2618,9 @@ function handleValueNormalizationChange(value) {
 function handleProjectionModeChange(value) {
     appState.projectionMode = value;
     applyFiltersAndRender();
+    // Update both main and trade display option labels
+    updateDisplayOptionLabels();
+    updateTradeDisplayOptionLabels();
 }
 
 function updateDisplayOptionLabels() {
@@ -2610,10 +2629,11 @@ function updateDisplayOptionLabels() {
     if (projectionModeLabel) {
         switch (appState.projectionMode) {
             case 'week':
-                projectionModeLabel.textContent = 'Weekly Projection';
+                const weekNumber = window.currentWeekNumber || 1;
+                projectionModeLabel.textContent = `Week ${weekNumber} Projection`;
                 break;
             case 'average':
-                projectionModeLabel.textContent = 'Weekly Average';
+                projectionModeLabel.textContent = 'Average';
                 break;
             case 'season':
                 projectionModeLabel.textContent = 'Season Total';
@@ -2632,6 +2652,20 @@ function updateDisplayOptionLabels() {
                 valueDisplayLabel.textContent = 'Normalized (0-100)';
                 break;
         }
+    }
+}
+
+function updateProjectionModeDropdownOptions(weekNumber) {
+    // Update the main projection mode dropdown option text to show the correct week number
+    const weekOption = document.querySelector('#projectionModeOptions .select-option[data-value="week"]');
+    if (weekOption) {
+        weekOption.textContent = `Week ${weekNumber} Projection`;
+    }
+    
+    // Update the trade calculator projection mode dropdown option text
+    const tradeWeekOption = document.querySelector('#tradeProjectionModeOptions .select-option[data-value="week"]');
+    if (tradeWeekOption) {
+        tradeWeekOption.textContent = `Week ${weekNumber} Projection`;
     }
 }
 
@@ -2736,6 +2770,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeHorizontalView();
     setupEventListeners();
     setupLoginEventListeners();
+    updateTeamSortByLabel();
     
     // Check if user is already authenticated
     if (checkSavedAuth()) {

@@ -493,7 +493,7 @@ body {
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    padding: 0 16px; /* Remove vertical padding, let height control it */
+    padding: 0 8px; /* Reduced horizontal padding for thinner buttons */
     height: 44px; /* Match parent height */
     cursor: pointer;
     font-size: 14px;
@@ -502,6 +502,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex: 1; /* Make all buttons equal width */
 }
 
 .toggle-buttons button:last-child {
@@ -522,92 +523,7 @@ body {
     flex-grow: 1;
 }
 
-/* Display options button & popover */
-.display-options-container {
-    position: relative;
-}
 
-.display-options-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    color: var(--text-primary);
-    padding: 0 12px;
-    height: 40px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s, border-color 0.2s;
-}
-
-.display-options-btn:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--accent-primary);
-}
-
-.display-options-btn.active {
-    background: var(--accent-primary);
-    color: white;
-    border-color: var(--accent-primary);
-}
-
-.display-options-btn svg {
-    width: 16px;
-    height: 16px;
-}
-
-/* Display Options Panel */
-.display-options-panel {
-    background: var(--bg-controls);
-    border: 1px solid var(--border-primary);
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow);
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    position: relative;
-    z-index: 9999;
-}
-
-.display-options-panel.hidden {
-    opacity: 0;
-    transform: translateY(-10px);
-    pointer-events: none;
-    max-height: 0;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
-}
-
-.display-options-content {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    flex-wrap: wrap;
-}
-
-.display-options-panel .control-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 200px;
-    flex: 1;
-}
-
-.display-options-panel .custom-select {
-    min-width: 160px;
-    flex: 1;
-    position: relative;
-    z-index: 10000;
-}
-
-.display-options-panel .custom-select.active .select-options {
-    z-index: 10001;
-}
 
 /* Custom scrollbar for all dropdown options */
 .select-options::-webkit-scrollbar {
@@ -1230,37 +1146,28 @@ body {
 .footer a { color: var(--accent-primary); text-decoration: none; font-weight: 500; transition: color 0.3s ease; }
 .footer a:hover { color: var(--accent-hover); text-decoration: underline; }
 
-/* Display options container */
-.display-options-container {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
 
-.display-options-btn,
+
 .horizontal-view-btn {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-primary);
     color: var(--text-primary);
-    padding: 0 1rem; /* Remove vertical padding, let height control it */
+    padding: 0 12px; /* Adjust padding for icon-only button */
     height: 40px; /* Consistent height */
     border-radius: 10px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    font-weight: 500;
+    justify-content: center; /* Center the icon */
     transition: all 0.3s ease;
     box-shadow: var(--shadow);
+    min-width: 40px; /* Ensure consistent width for icon-only button */
 }
-.display-options-btn:hover,
 .horizontal-view-btn:hover {
     background: var(--bg-secondary);
     border-color: var(--accent-primary);
     transform: translateY(-1px);
 }
-.display-options-btn.active,
 .horizontal-view-btn.active {
     background: var(--accent-primary);
     color: white;
@@ -1379,6 +1286,42 @@ body {
     }
 }
 @media (max-width: 768px) {
+    /* Controls header responsive layout */
+    .controls-header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+    }
+    
+    .controls-header > * {
+        height: auto;
+        min-height: 40px;
+    }
+    
+    .control-item {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .control-item label {
+        min-width: 120px;
+    }
+    
+    .custom-select {
+        min-width: 140px;
+        flex: 1;
+    }
+    
+    .toggle-buttons {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .horizontal-view-btn {
+        align-self: center;
+        margin-top: 8px;
+    }
+    
     .trade-interface {
         grid-template-columns: 1fr;
         gap: 0.75rem;
@@ -1428,7 +1371,39 @@ body {
         max-width: 100%;
     }
 }
-@media (max-width: 480px) { /* Adjustments */ }
+@media (max-width: 480px) {
+    /* Controls header extra small screen adjustments */
+    .controls-header {
+        padding: 12px;
+        gap: 8px;
+    }
+    
+    .control-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    
+    .control-item label {
+        min-width: auto;
+        font-size: 13px;
+    }
+    
+    .custom-select {
+        min-width: 120px;
+        width: 100%;
+    }
+    
+    .toggle-buttons {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+    .toggle-buttons button {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+}
 
 
 /* ============================================= */

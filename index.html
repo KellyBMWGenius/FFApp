@@ -104,26 +104,10 @@
                         </div>
 
                         <div class="control-item">
-                            <div class="toggle-buttons" id="position-toggles">
-                                            <button class="active" data-filter="all">Roster View</button>
-            <button data-filter="starters">Starters Only</button>
-            <button data-filter="bench">All Players</button>
-                            </div>
-                        </div>
-
-
-
-                        <div class="control-item">
-                            <label for="sortBy">View Mode:</label>
-                            <div class="custom-select" id="sortBySelect">
-                                <div class="select-trigger" id="sortByTrigger">
-                                    <span id="sortByLabel">Optimal Lineup</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="select-options" id="sortByOptions">
-                                    <div class="select-option" data-value="optimal">Optimal Lineup</div>
-                                    <div class="select-option" data-value="positional">Positional Comparison</div>
-                                </div>
+                            <div class="toggle-buttons" id="roster-view-selector">
+                                <button class="active" data-view="optimal">Optimal Roster</button>
+                                <button data-view="all-players">All Players</button>
+                                <button data-view="position-groups">Position Groups</button>
                             </div>
                         </div>
 
@@ -137,54 +121,46 @@
                                 <div class="select-options" id="teamSortByOptions">
                                     <div class="select-option" data-value="value">Total Value</div>
                                     <div class="select-option" data-value="starter-value">Starter Value</div>
-                                    <div class="select-option" data-value="positional-score">Positional Score</div>
+                                    <div class="select-option" data-value="weekly-points">Weekly Points</div>
                                     <div class="select-option" data-value="name">Team Name</div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="display-options-container">
-                            <button class="display-options-btn" id="display-options-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l.34-.1a1.464 1.464 0 0 1 .872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/></svg>
-                                Display Options
-                            </button>
-                            <button class="horizontal-view-btn" id="horizontalViewBtn" title="Toggle horizontal view for side-by-side roster comparison (Ctrl+H)">
-                                <i class="fas fa-arrows-alt-h"></i>
-                                <span>Horizontal View</span>
-                            </button>
+                        <div class="control-item">
+                            <label for="projectionMode">Projection Mode:</label>
+                            <div class="custom-select" id="projectionModeSelect">
+                                <div class="select-trigger" id="projectionModeTrigger">
+                                    <span id="projectionModeLabel">Average</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="select-options" id="projectionModeOptions">
+                                    <div class="select-option" data-value="week">Week 1 Projection</div>
+                                    <div class="select-option" data-value="average">Average</div>
+                                    <div class="select-option" data-value="season">Season Total</div>
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="control-item">
+                            <label for="valueDisplay">Value Display:</label>
+                            <div class="custom-select" id="valueDisplaySelect">
+                                <div class="select-trigger" id="valueDisplayTrigger">
+                                    <span id="valueDisplayLabel">Raw Values</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="select-options" id="valueDisplayOptions">
+                                    <div class="select-option" data-value="raw">Raw Values</div>
+                                    <div class="select-option" data-value="normalized">Normalized (0-100)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="horizontal-view-btn" id="horizontalViewBtn" title="Toggle horizontal view for side-by-side roster comparison (Ctrl+H)">
+                            <i class="fas fa-arrows-alt-h"></i>
+                        </button>
                     </header>
-                    <div class="display-options-panel hidden" id="display-options-panel">
-                        <div class="display-options-content">
-                            <div class="control-item">
-                                <label for="projectionMode">Projection Mode:</label>
-                                <div class="custom-select" id="projectionModeSelect">
-                                    <div class="select-trigger" id="projectionModeTrigger">
-                                        <span id="projectionModeLabel">Weekly Average</span>
-                                        <i class="fas fa-chevron-down"></i>
-                                    </div>
-                                    <div class="select-options" id="projectionModeOptions">
-                                        <div class="select-option" data-value="week">Weekly Projection</div>
-                                        <div class="select-option" data-value="average">Weekly Average</div>
-                                        <div class="select-option" data-value="season">Season Total</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="control-item">
-                                <label for="valueDisplay">Value Display:</label>
-                                <div class="custom-select" id="valueDisplaySelect">
-                                    <div class="select-trigger" id="valueDisplayTrigger">
-                                        <span id="valueDisplayLabel">Raw Values</span>
-                                        <i class="fas fa-chevron-down"></i>
-                                    </div>
-                                    <div class="select-options" id="valueDisplayOptions">
-                                        <div class="select-option" data-value="raw">Raw Values</div>
-                                        <div class="select-option" data-value="normalized">Normalized (0-100)</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+
                     <div class="horizontal-view-help" id="horizontalViewHelp"></div>
                     <div class="rosters-grid" id="rostersGrid"></div>
                 </div>
