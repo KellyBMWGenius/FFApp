@@ -31,6 +31,16 @@
     --accent-secondary: #60A5FA;
     --accent-hover: #2563EB;
     
+    --accent-color: #3B82F6;
+    --accent-color-rgb: 59, 130, 246;
+    
+    --bg-color: var(--bg-primary);
+    --text-color: var(--text-primary);
+    --text-muted: var(--text-muted);
+    --border-color: var(--border-primary);
+    --input-bg: var(--bg-secondary);
+    --hover-bg: var(--bg-hover);
+    
     --success-bg: #10B981;
     --success-text: #FFFFFF;
     --warning-bg: #F59E0B;
@@ -72,6 +82,16 @@
     --accent-secondary: #60A5FA;
     --accent-hover: #2563EB;
     
+    --accent-color: #3B82F6;
+    --accent-color-rgb: 59, 130, 246;
+    
+    --bg-color: var(--bg-primary);
+    --text-color: var(--text-primary);
+    --text-muted: var(--text-muted);
+    --border-color: var(--border-primary);
+    --input-bg: var(--bg-secondary);
+    --hover-bg: var(--bg-hover);
+    
     --success-bg: #10B981;
     --success-text: #FFFFFF;
     --warning-bg: #F59E0B;
@@ -97,6 +117,11 @@
     flex-direction: column;
     overflow: visible;
     position: relative;
+}
+
+/* Hide main app by default, will be shown after authentication */
+#mainApp {
+    display: none;
 }
 
 body {
@@ -2475,4 +2500,237 @@ body {
     flex-direction: column;
     gap: 0.15rem;
     min-width: 0;
+}
+
+/* User Team Highlighting */
+.user-team {
+    position: relative;
+    border: 3px solid var(--accent-color);
+    box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.4);
+}
+
+/* Login Modal Styles */
+.login-modal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.login-content {
+    max-width: 550px; /* Increase max-width to accommodate hover effects */
+    width: 90%;
+    padding: 2rem 3rem 2rem 2rem; /* Increase right padding further */
+    text-align: center;
+    background: var(--bg-color);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.login-header h2 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-color);
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.login-header p {
+    margin: 0 0 2rem 0;
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.login-step {
+    margin-bottom: 1.5rem;
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.1);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--accent-color);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    background: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-secondary {
+    background: var(--border-color);
+    color: var(--text-color);
+    margin-right: 0.5rem;
+}
+
+.btn-secondary:hover {
+    background: var(--text-muted);
+}
+
+/* Header button styles */
+.header .btn {
+    margin-left: 0.5rem;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.header .btn-secondary {
+    background: var(--bg-controls);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.header .btn-secondary:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-color);
+}
+
+#usernameLoading {
+    margin-top: 1rem;
+}
+
+#usernameLoading .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 0.5rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .login-content {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+    
+    .login-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn-secondary {
+        margin-right: 0;
+    }
+}
+
+/* League buttons styling */
+.league-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 1rem 2rem 1rem 0; /* Add top and bottom padding to prevent border cutoff */
+    position: relative; /* Ensure proper positioning context */
+    width: calc(100% + 2rem); /* Extend width to accommodate padding */
+    margin-right: -2rem; /* Compensate for the width extension */
+}
+
+.league-button {
+    padding: 16px 20px 16px 20px; /* Ensure consistent padding */
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+    font-weight: 500;
+    box-sizing: border-box; /* Ensure padding is included in width calculation */
+}
+
+.league-button:hover {
+    border-color: var(--accent-color);
+    background: var(--hover-bg);
+    transform: translateY(-1px); /* Reduce the upward movement */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); /* Reduce shadow size */
+    z-index: 1; /* Ensure hover state appears above other elements */
+}
+
+.league-button.selected {
+    border-color: var(--accent-color);
+    background: var(--accent-color);
+    color: white;
+    box-shadow: 0 4px 12px rgba(var(--accent-color-rgb), 0.3);
+}
+
+.league-button .league-name {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.league-button .league-details {
+    font-size: 0.9rem;
+    opacity: 0.8;
 }

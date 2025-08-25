@@ -9,7 +9,43 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="app">
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal login-modal">
+        <div class="modal-content login-content">
+            <div class="login-header">
+                <h2><i class="fas fa-football-ball"></i> Welcome to Fantasy Roster Analyzer</h2>
+                <p>Enter your Sleeper username to get started</p>
+            </div>
+            
+            <div class="login-step" id="usernameStep">
+                <div class="input-group">
+                    <label for="usernameInput">Sleeper Username:</label>
+                    <input type="text" id="usernameInput" placeholder="Enter your username" />
+                </div>
+                <button id="findLeaguesBtn" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Find My Leagues
+                </button>
+                <div class="loading" id="usernameLoading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Finding your leagues...</p>
+                </div>
+            </div>
+            
+            <div class="login-step" id="leagueStep" style="display: none;">
+                <div class="input-group">
+                    <label for="leagueSelect">Select League:</label>
+                    <div class="league-buttons" id="leagueButtons">
+                        <!-- League buttons will be populated here -->
+                    </div>
+                </div>
+                <button id="backToUsernameBtn" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app" id="mainApp" style="display: none;">
         <header class="header">
             <div class="container">
                 <div class="header-content">
@@ -20,6 +56,9 @@
                         </button>
                         <button id="refreshBtn" class="btn btn-primary">
                             <i class="fas fa-sync-alt"></i> Refresh Data
+                        </button>
+                        <button id="logoutBtn" class="btn btn-secondary" title="Switch Account">
+                            <i class="fas fa-user"></i> Switch Account
                         </button>
                         <div class="league-info">
                             <span class="league-name" id="leagueName">Loading...</span>

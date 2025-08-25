@@ -1,8 +1,9 @@
 // Configuration
-const CONFIG = {
+let CONFIG = {
     sleeper: {
-        username: 'coyoteoty',
-        leagueId: '1257448634119626752'
+        username: null,
+        leagueId: null,
+        userId: null
     },
     fantasyCalc: {
         url: 'https://api.fantasycalc.com/values/current?isDynasty=false&numQbs=2&numTeams=10&ppr=1'
@@ -18,6 +19,15 @@ const CONFIG = {
         ],
         excluded: ['K', 'DEF']
     }
+};
+
+// User authentication state
+let userAuth = {
+    isAuthenticated: false,
+    username: null,
+    userId: null,
+    leagueId: null,
+    userLeagues: []
 };
 
 // Global state
@@ -337,7 +347,28 @@ function processRosterData() {
         console.log('All team names:', teamNames);
     }
     
-    return processedRosters.sort((a, b) => b.stats.totalValue - a.stats.totalValue);
+    // Sort rosters: user's team first, then by selected sorting criteria
+    return processedRosters.sort((a, b) => {
+        // Always put user's team first
+        if (a.user?.user_id === userAuth.userId) return -1;
+        if (b.user?.user_id === userAuth.userId) return 1;
+        
+        // Then sort by the selected criteria
+        switch (appState.teamSort) {
+            case 'value':
+                return b.stats.totalValue - a.stats.totalValue;
+            case 'starter-value':
+                return b.stats.starterValue - a.stats.starterValue;
+            case 'positional-score':
+                const aScore = Object.values(a.stats.positionalScores).reduce((sum, pos) => sum + pos.normalized, 0);
+                const bScore = Object.values(b.stats.positionalScores).reduce((sum, pos) => sum + pos.normalized, 0);
+                return bScore - aScore;
+            case 'name':
+                return a.teamName.localeCompare(b.teamName);
+            default:
+                return b.stats.totalValue - a.stats.totalValue;
+        }
+    });
 }
 
 function organizePlayersByPosition(players) {
@@ -701,6 +732,12 @@ function getMaxPlayersPerPosition(rosters) {
 function createRosterCard(roster, maxData = null, rank = null) {
     const card = document.createElement('div');
     card.className = 'roster-card';
+    
+    // Add user-team class if this is the user's team
+    if (roster.user?.user_id === userAuth.userId) {
+        card.classList.add('user-team');
+    }
+    
     card.setAttribute('data-view-mode', appState.viewMode);
 
     const rankHTML = rank ? `<div class="rank-badge">#${rank}</div>` : '';
@@ -922,11 +959,11 @@ function initTradeCalculator() {
     // Update trade calculator display option labels to match current app state
     updateTradeDisplayOptionLabels();
 
-    const myUser = allData.users.find(u => u.display_name.toLowerCase() === CONFIG.sleeper.username.toLowerCase());
-    const myRoster = myUser ? allData.processedRosters.find(r => r.user.user_id === myUser.user_id) : allData.processedRosters[0];
-    const otherRoster = allData.processedRosters.find(r => r.rosterId !== myRoster.rosterId) || allData.processedRosters[1];
+    // Always use the user's team as team 1 (first team)
+    const userRoster = allData.processedRosters.find(r => r.user?.user_id === userAuth.userId);
+    const otherRoster = allData.processedRosters.find(r => r.user?.user_id !== userAuth.userId);
 
-    if (myRoster) addTradeTeam(myRoster.rosterId);
+    if (userRoster) addTradeTeam(userRoster.rosterId);
     if (otherRoster) addTradeTeam(otherRoster.rosterId);
     renderAddTeamButton();
     
@@ -2578,11 +2615,19 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeTheme();
     initializeHorizontalView();
     setupEventListeners();
+    setupLoginEventListeners();
     
-    // Initialize team selector state before loading data
-    initializeTeamSelectorState();
-    
-    loadAllData();
+    // Check if user is already authenticated
+    if (checkSavedAuth()) {
+        // User is authenticated, show main app
+        hideLoginModal();
+        // Initialize team selector state before loading data
+        initializeTeamSelectorState();
+        loadAllData();
+    } else {
+        // User not authenticated, show login modal
+        showLoginModal();
+    }
 });
 
 window.debug = { allData, CONFIG, loadAllData, tradeState };
@@ -2697,4 +2742,258 @@ function findPlayerById(playerId) {
         if (player) return player;
     }
     return null;
+}
+
+// ==================================================================
+// == SECTION 2: USER AUTHENTICATION & LOGIN SYSTEM
+// ==================================================================
+
+async function fetchUserLeagues(username) {
+    try {
+        const response = await fetch(`https://api.sleeper.app/v1/user/${username}`);
+        if (!response.ok) {
+            throw new Error('User not found');
+        }
+        
+        const userData = await response.json();
+        
+        // Get current NFL season dynamically
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1; // January = 1
+        
+        // If we're in the first half of the year (before August), use previous year's season
+        // If we're in the second half (August onwards), use current year's season
+        const currentSeason = currentMonth < 8 ? currentYear - 1 : currentYear;
+        
+        // Fetch both current season and previous season to give users options
+        const seasonsToFetch = [currentSeason, currentSeason - 1];
+        let allLeagues = [];
+        
+        for (const season of seasonsToFetch) {
+            try {
+                const leaguesResponse = await fetch(`https://api.sleeper.app/v1/user/${userData.user_id}/leagues/nfl/${season}`);
+                if (leaguesResponse.ok) {
+                    const seasonLeagues = await leaguesResponse.json();
+                    // Add season info to each league
+                    seasonLeagues.forEach(league => {
+                        league.season = season;
+                        league.isCurrentSeason = season === currentSeason;
+                    });
+                    allLeagues = allLeagues.concat(seasonLeagues);
+                }
+            } catch (error) {
+                console.warn(`Failed to fetch leagues for season ${season}:`, error);
+            }
+        }
+        
+        // Sort leagues: current season first, then by league name
+        allLeagues.sort((a, b) => {
+            if (a.isCurrentSeason && !b.isCurrentSeason) return -1;
+            if (!a.isCurrentSeason && b.isCurrentSeason) return 1;
+            return a.name.localeCompare(b.name);
+        });
+        
+        return { userData, leagues: allLeagues };
+    } catch (error) {
+        console.error('Error fetching user leagues:', error);
+        throw error;
+    }
+}
+
+function showLoginModal() {
+    const loginModal = document.getElementById('loginModal');
+    const mainApp = document.getElementById('mainApp');
+    
+    if (loginModal && mainApp) {
+        loginModal.style.display = 'flex';
+        mainApp.style.display = 'none';
+    }
+}
+
+function hideLoginModal() {
+    const loginModal = document.getElementById('loginModal');
+    const mainApp = document.getElementById('mainApp');
+    
+    if (loginModal && mainApp) {
+        loginModal.style.display = 'none';
+        mainApp.style.display = 'flex';
+    }
+}
+
+function showUsernameStep() {
+    document.getElementById('usernameStep').style.display = 'block';
+    document.getElementById('leagueStep').style.display = 'none';
+    document.getElementById('usernameInput').value = '';
+}
+
+function showLeagueStep() {
+    document.getElementById('usernameStep').style.display = 'none';
+    document.getElementById('leagueStep').style.display = 'block';
+}
+
+function populateLeagueSelector(leagues) {
+    const leagueButtons = document.getElementById('leagueButtons');
+    
+    // Clear existing options
+    leagueButtons.innerHTML = '';
+    
+    if (leagues.length === 0) {
+        leagueButtons.innerHTML = '<div class="league-button" style="text-align: center; cursor: default;">No leagues found</div>';
+        return;
+    }
+    
+    leagues.forEach(league => {
+        const button = document.createElement('button');
+        button.className = 'league-button';
+        button.type = 'button';
+        
+        button.innerHTML = `
+            <div class="league-name">${league.name}</div>
+            <div class="league-details">
+                ${league.isCurrentSeason ? '🟢 Current Season' : '⚫ Previous Season'} • Season ${league.season} • ${league.total_rosters} teams
+            </div>
+        `;
+        
+        button.addEventListener('click', () => {
+            // Remove selected class from all buttons
+            document.querySelectorAll('.league-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked button
+            button.classList.add('selected');
+            
+            // Set the selected league
+            userAuth.leagueId = league.league_id;
+            
+            // Automatically enter the league after a short delay
+            setTimeout(() => {
+                enterSelectedLeague();
+            }, 300);
+        });
+        
+        leagueButtons.appendChild(button);
+    });
+}
+
+function setupLoginEventListeners() {
+    const findLeaguesBtn = document.getElementById('findLeaguesBtn');
+    const backToUsernameBtn = document.getElementById('backToUsernameBtn');
+    const usernameInput = document.getElementById('usernameInput');
+    
+    // Logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            // Clear saved authentication
+            localStorage.removeItem('ffapp-user-auth');
+            userAuth = {
+                isAuthenticated: false,
+                username: null,
+                userId: null,
+                leagueId: null,
+                userLeagues: []
+            };
+            
+            // Reset CONFIG
+            CONFIG.sleeper.username = null;
+            CONFIG.sleeper.leagueId = null;
+            CONFIG.sleeper.userId = null;
+            
+            // Show login modal
+            showLoginModal();
+        });
+    }
+    
+    // Find leagues button
+    findLeaguesBtn.addEventListener('click', async () => {
+        const username = usernameInput.value.trim();
+        if (!username) {
+            alert('Please enter a username');
+            return;
+        }
+        
+        const loading = document.getElementById('usernameLoading');
+        loading.style.display = 'block';
+        findLeaguesBtn.disabled = true;
+        
+        try {
+            const { userData, leagues } = await fetchUserLeagues(username);
+            
+            userAuth.username = username;
+            userAuth.userId = userData.user_id;
+            userAuth.userLeagues = leagues;
+            
+            populateLeagueSelector(leagues);
+            showLeagueStep();
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+        } finally {
+            loading.style.display = 'none';
+            findLeaguesBtn.disabled = false;
+        }
+    });
+    
+    // Back to username button
+    backToUsernameBtn.addEventListener('click', () => {
+        showUsernameStep();
+        userAuth.leagueId = null;
+        // Clear any selected league buttons
+        document.querySelectorAll('.league-button').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+    });
+    
+    // Enter key on username input
+    usernameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            findLeaguesBtn.click();
+        }
+    });
+}
+
+function checkSavedAuth() {
+    const savedAuth = localStorage.getItem('ffapp-user-auth');
+    if (savedAuth) {
+        try {
+            const auth = JSON.parse(savedAuth);
+            if (auth.username && auth.leagueId && auth.userId) {
+                userAuth = { ...userAuth, ...auth, isAuthenticated: true };
+                CONFIG.sleeper.username = auth.username;
+                CONFIG.sleeper.leagueId = auth.leagueId;
+                CONFIG.sleeper.userId = auth.userId;
+                return true;
+            }
+        } catch (error) {
+            console.error('Error parsing saved auth:', error);
+            localStorage.removeItem('ffapp-user-auth');
+        }
+    }
+    return false;
+}
+
+// ==================================================================
+// == SECTION 3: MODIFIED APPLICATION LOGIC FOR USER TEAM PRIORITY
+// ==================================================================
+
+function enterSelectedLeague() {
+    if (!userAuth.leagueId) {
+        alert('Please select a league');
+        return;
+    }
+    
+    // Update CONFIG with selected league
+    CONFIG.sleeper.username = userAuth.username;
+    CONFIG.sleeper.leagueId = userAuth.leagueId;
+    CONFIG.sleeper.userId = userAuth.userId;
+    
+    userAuth.isAuthenticated = true;
+    
+    // Store in localStorage
+    localStorage.setItem('ffapp-user-auth', JSON.stringify(userAuth));
+    
+    hideLoginModal();
+    
+    // Load the selected league
+    loadAllData();
 }
