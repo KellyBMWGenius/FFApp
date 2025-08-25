@@ -298,6 +298,8 @@ body {
     margin-bottom: 2rem;
     position: relative;
     z-index: 10000;
+    /* Ensure focus outlines are not clipped */
+    overflow: visible;
 }
 
 /* Ensure all direct children have consistent height */
@@ -337,12 +339,48 @@ body {
     border-radius: 6px;
     min-width: 140px;
     box-shadow: var(--shadow);
-    transition: border-color 0.2s ease;
     height: 40px; /* Consistent height */
+    /* Ensure focus outline is not clipped */
+    overflow: visible;
 }
 
-.custom-select:hover {
+/* Use a pseudo-element approach for more reliable hover */
+.custom-select::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    pointer-events: none;
+    z-index: 1;
+    transition: border-color 0.1s ease;
+}
+
+.custom-select:hover::after {
     border-color: var(--accent-primary);
+}
+
+.custom-select:hover .select-trigger {
+    background: var(--bg-tertiary);
+}
+
+.custom-select:focus-within {
+    outline: none !important;
+    box-shadow: 0 0 0 1px var(--accent-primary);
+    /* Ensure the focus outline is not clipped */
+    position: relative;
+    z-index: 10002;
+}
+
+/* Override any browser default focus styles */
+.custom-select:focus,
+.custom-select:focus-visible,
+.custom-select:focus-within {
+    outline: none !important;
+    outline-offset: 0 !important;
 }
 
 .select-trigger {
@@ -363,6 +401,11 @@ body {
     background: var(--bg-tertiary);
 }
 
+.select-trigger:focus {
+    outline: none;
+    background: var(--bg-tertiary);
+}
+
 .select-trigger i {
     color: var(--text-muted);
     transition: transform 0.2s ease;
@@ -370,6 +413,12 @@ body {
 
 .custom-select.active .select-trigger i {
     transform: rotate(180deg);
+}
+
+.custom-select.active:focus-within {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--accent-primary);
+    z-index: 10002;
 }
 
 .select-options {
@@ -401,10 +450,11 @@ body {
     color: var(--text-primary);
     font-size: 14px;
     user-select: none;
+    background: var(--bg-secondary);
 }
 
 .select-option:hover {
-    background: var(--bg-tertiary);
+    background: var(--bg-tertiary) !important;
 }
 
 .select-option:active {
@@ -617,6 +667,16 @@ body {
     position: relative;
 }
 
+/* Ensure the main container allows focus outlines to be visible */
+.main {
+    overflow: visible;
+}
+
+/* Ensure the app container allows focus outlines to be visible */
+.app {
+    overflow: visible;
+}
+
 /* Ensure the main container allows dropdowns to be visible */
 .main {
     overflow: visible;
@@ -653,10 +713,14 @@ body {
     will-change: transform;
     isolation: isolate;
     /* Ensure the dropdown is not clipped by any parent container */
-    overflow: visible !important;
     clip: auto !important;
     /* Force the dropdown to be above all other content */
     position: absolute !important;
+}
+
+/* Ensure team selector options have proper background */
+.controls-header .control-item:first-child .custom-select.active .select-options .select-option {
+    background: var(--bg-secondary);
 }
 
 /* This rule is now handled by the more specific rule above */
