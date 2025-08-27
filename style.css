@@ -143,8 +143,7 @@ body {
 .header {
     background: var(--bg-header);
     border-bottom: 1px solid var(--border-primary);
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 100;
     box-shadow: var(--shadow);
 }
@@ -1327,6 +1326,11 @@ body {
         gap: 0.75rem;
     }
     
+    .trade-team-content {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
     /* Override 2-team layout on mobile */
     .trade-interface.two-teams {
         grid-template-columns: 1fr auto; /* Keep second column for add button */
@@ -1341,6 +1345,8 @@ body {
         max-width: 100%;
         gap: 0.75rem;
     }
+    
+
     
     .add-team-container {
         width: 100%;
@@ -1448,12 +1454,14 @@ body {
     margin-top: 0.5rem;
 }
 
+
+
 .trade-interface {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 1rem;
     align-items: start;
-    max-width: 1400px;
+    max-width: 1800px;
     margin: 0 auto;
     width: 100%;
 }
@@ -1491,6 +1499,25 @@ body {
 .trade-interface.three-teams {
     grid-template-columns: 1fr 1fr 1fr;
     gap: 1rem;
+    justify-content: center;
+    max-width: 1800px;
+}
+
+/* Medium screen breakpoint for trade calculator */
+@media (max-width: 1200px) {
+    .trade-interface.three-teams {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        max-width: 100%;
+    }
+    
+    .trade-interface.three-teams .trade-team-column:last-child {
+        grid-column: 1 / -1;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+
 }
 
 /* Ensure the add team button is properly positioned in its column slot */
@@ -1522,6 +1549,34 @@ body {
     flex-direction: column;
     overflow: hidden;
     min-width: 0;
+    width: 100%;
+}
+
+.trade-team-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    height: 100%;
+}
+
+.trade-roster-section,
+.trade-receiving-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.section-header {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    text-align: center;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-secondary);
 }
 
 .trade-team-header {
@@ -1529,6 +1584,49 @@ body {
     border-bottom: 1px solid var(--border-primary);
     background: var(--bg-tertiary);
     position: relative;
+}
+
+/* Inline team summary above roster */
+.team-summary-inline {
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-secondary);
+    padding: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.team-summary-inline .team-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.team-summary-inline .net-value {
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    min-width: 60px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.team-summary-inline .net-value.positive {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.team-summary-inline .net-value.negative {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+.team-summary-inline .net-value.neutral {
+    background: rgba(251, 191, 36, 0.1);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
 /* Simple styling for native select to blend in */
@@ -1572,14 +1670,40 @@ body {
     display: grid;
     grid-template-columns: auto 1fr auto auto auto;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    border-radius: 6px;
-    margin-bottom: 0.15rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease, opacity 0.2s ease;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 4px;
+    margin-bottom: 0.1rem;
+    cursor: grab;
+    transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
     border-bottom: 1px solid var(--border-secondary);
     background: var(--bg-player-row);
+    font-size: 0.85rem;
+}
+
+.trade-player-row:active {
+    cursor: grabbing;
+}
+
+.trade-player-row .player-info .player-name {
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
+.trade-player-row .player-info .player-details {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.trade-player-row .position-badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.3rem;
+}
+
+.trade-player-row .player-projection,
+.trade-player-row .player-value {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.3rem;
 }
 
 .trade-player-row.involved {
@@ -1587,8 +1711,33 @@ body {
     opacity: 0.6;
 }
 
+.trade-player-row.in-trade {
+    background-color: var(--bg-hover);
+    opacity: 0.8;
+}
+
+.trade-player-row.in-trade .player-name {
+    text-decoration: line-through;
+    text-decoration-color: var(--accent-primary);
+    text-decoration-thickness: 2px;
+    color: var(--text-secondary);
+}
+
+.trade-player-row.in-trade .position-badge,
+.trade-player-row.in-trade .player-projection,
+.trade-player-row.in-trade .player-value {
+    opacity: 0.7;
+}
+
 .trade-player-row:hover {
     background: var(--bg-player-row-hover);
+}
+
+.trade-player-row.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    background: var(--bg-hover);
+    box-shadow: var(--shadow);
 }
 
 .trade-player-row:last-child {
@@ -1722,14 +1871,111 @@ body {
 .trade-player-list .column-headers {
     display: grid;
     grid-template-columns: 1fr auto auto;
-    gap: 0.5rem;
-    padding: 0.25rem 0.5rem;
+    gap: 0.25rem;
+    padding: 0.2rem 0.4rem;
     background: var(--bg-tertiary);
-    border-radius: 6px;
-    margin-bottom: 0.25rem;
-    font-size: 0.8rem;
+    border-radius: 4px;
+    margin-bottom: 0.2rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-secondary);
+}
+
+/* Receiving Section Styles */
+.trade-receiving-list {
+    flex: 1;
+    min-height: 200px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 0.5rem;
+    border: 2px dashed var(--border-secondary);
+    transition: all 0.2s ease;
+}
+
+.trade-receiving-list.drag-over {
+    border-color: var(--accent-primary);
+    background: var(--bg-hover);
+}
+
+.receiving-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 2rem 1rem;
+    font-size: 0.9rem;
+}
+
+.receiving-players {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.receiving-player-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 0.4rem;
+    display: grid;
+    grid-template-columns: 1fr auto auto auto auto;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    cursor: move;
+    transition: all 0.2s ease;
+}
+
+.receiving-player-card:hover {
+    background: var(--bg-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.receiving-player-card.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+}
+
+.receiving-player-card .player-info .player-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.receiving-player-card .player-info .player-details {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.receiving-player-card .position-badge {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.25rem;
+}
+
+.receiving-player-card .player-projection,
+.receiving-player-card .player-value {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.25rem;
+}
+
+.receiving-player-card .remove-player-btn {
+    background: var(--error-bg);
+    color: var(--error-text);
+    border: none;
+    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.7rem;
+    transition: all 0.2s ease;
+}
+
+.receiving-player-card .remove-player-btn:hover {
+    background: #b91c1c;
+    transform: scale(1.1);
 }
 
 .trade-player-list .position-group {
@@ -3073,4 +3319,157 @@ body {
     color: var(--text-secondary);
     text-align: center;
     margin-top: 0.5rem;
+}
+
+/* Medium screen breakpoint for trade calculator */
+@media (max-width: 1200px) {
+    .trade-interface.three-teams {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        max-width: 100%;
+    }
+    
+    .trade-interface.three-teams .trade-team-column:last-child {
+        grid-column: 1 / -1;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Controls header responsive layout */
+    .controls-header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+    }
+    
+    .controls-header > * {
+        height: auto;
+        min-height: 40px;
+    }
+    
+    .control-item {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .control-item label {
+        min-width: 120px;
+    }
+    
+    .custom-select {
+        min-width: 140px;
+        flex: 1;
+    }
+    
+    .toggle-buttons {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .horizontal-view-btn {
+        align-self: center;
+        margin-top: 8px;
+    }
+    
+    .trade-interface {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .trade-team-content {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    /* Inline team summary mobile adjustments */
+    .team-summary-inline {
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 0.4rem;
+        text-align: center;
+    }
+    
+    .team-summary-inline .net-value {
+        min-width: 50px;
+        font-size: 0.8rem;
+    }
+    
+    /* Override 2-team layout on mobile */
+    .trade-interface.two-teams {
+        grid-template-columns: 1fr auto; /* Keep second column for add button */
+        max-width: 100%;
+        gap: 0.75rem;
+    }
+    
+    /* Override 3-team layout on mobile */
+    .trade-interface:has(.trade-team-column:nth-child(3):last-child),
+    .trade-interface.three-teams {
+        grid-template-columns: 1fr;
+        max-width: 100%;
+        gap: 0.75rem;
+    }
+    
+    .add-team-container {
+        width: 100%;
+        min-height: 120px;
+    }
+    
+    /* Trade team columns should still fill available width on mobile */
+    .trade-team-column {
+        min-width: 0;
+        max-width: none;
+        width: 100%;
+    }
+    
+    /* Stack roster cards vertically on mobile */
+    .roster-card {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .rosters-grid {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .rosters-container.horizontal-view .roster-card {
+        flex: 0 0 100%;
+        min-width: 100%;
+        max-width: 100%;
+    }
+}
+@media (max-width: 480px) {
+    /* Controls header extra small screen adjustments */
+    .controls-header {
+        padding: 12px;
+        gap: 8px;
+    }
+    
+    .control-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    
+    .control-item label {
+        min-width: auto;
+        font-size: 13px;
+    }
+    
+    .custom-select {
+        min-width: 120px;
+        width: 100%;
+    }
+    
+    .toggle-buttons {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+    .toggle-buttons button {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
 }

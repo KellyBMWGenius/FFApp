@@ -1053,6 +1053,10 @@ function switchView(view) {
         } else if (tradeState.teams.length > 0) {
             // Update trade calculator display option labels to match current app state
             updateTradeDisplayOptionLabels();
+            // Update inline summaries if there are existing trades
+            if (Object.keys(tradeState.tradeParts).length > 0) {
+                calculateAndDisplayTrade();
+            }
         }
     } else if (view === 'free-agents') {
         freeAgents.style.display = 'block';
@@ -1142,8 +1146,27 @@ function initTradeCalculator() {
     const userRoster = allData.processedRosters.find(r => r.user?.user_id === userAuth.userId);
     const otherRoster = allData.processedRosters.find(r => r.user?.user_id !== userAuth.userId);
 
-    if (userRoster) addTradeTeam(userRoster.rosterId);
-    if (otherRoster) addTradeTeam(otherRoster.rosterId);
+    console.log('Trade Calculator: Found rosters:', { 
+        userRoster: userRoster ? userRoster.teamName : 'Not found',
+        otherRoster: otherRoster ? otherRoster.teamName : 'Not found',
+        userAuth: userAuth,
+        allRosters: allData.processedRosters.map(r => ({ id: r.rosterId, name: r.teamName, userId: r.user?.user_id }))
+    });
+
+    if (userRoster) {
+        console.log('Trade Calculator: Adding user team:', userRoster.teamName);
+        addTradeTeam(userRoster.rosterId);
+    } else {
+        console.error('Trade Calculator: User roster not found!');
+    }
+    
+    if (otherRoster) {
+        console.log('Trade Calculator: Adding other team:', otherRoster.teamName);
+        addTradeTeam(otherRoster.rosterId);
+    } else {
+        console.error('Trade Calculator: Other roster not found!');
+    }
+    
     renderAddTeamButton();
     
     // Set initial layout classes
@@ -1262,7 +1285,10 @@ function sortTradeTeams(sortBy) {
     
     // Re-render all teams with the new view mode
     console.log('Trade Calculator: Re-rendering teams with view mode:', tradeState.viewMode);
-    tradeState.teams.forEach(team => renderTeamRoster(team.rosterId, team.listElId));
+    tradeState.teams.forEach(team => {
+        renderTeamRoster(team.rosterId, team.listElId);
+        renderReceivingList(team.rosterId, team.receivingElId);
+    });
 }
 
 function setupTradeProjectionModeControls() {
@@ -1296,7 +1322,10 @@ function setupTradeProjectionModeControls() {
             
             // Update projection mode and re-render
             appState.projectionMode = value;
-            tradeState.teams.forEach(team => renderTeamRoster(team.rosterId, team.listElId));
+            tradeState.teams.forEach(team => {
+                renderTeamRoster(team.rosterId, team.listElId);
+                renderReceivingList(team.rosterId, team.receivingElId);
+            });
         });
     });
     
@@ -1339,7 +1368,10 @@ function setupTradeValueDisplayControls() {
             
             // Update value display mode and re-render
             appState.valueNormalization = value;
-            tradeState.teams.forEach(team => renderTeamRoster(team.rosterId, team.listElId));
+            tradeState.teams.forEach(team => {
+                renderTeamRoster(team.rosterId, team.listElId);
+                renderReceivingList(team.rosterId, team.receivingElId);
+            });
         });
     });
     
@@ -1384,13 +1416,22 @@ function updateTradeDisplayOptionLabels() {
 }
 
 function addTradeTeam(rosterId = null) {
-    if (tradeState.teams.length >= 3) return;
+    console.log('addTradeTeam called with rosterId:', rosterId);
+    console.log('Current trade state teams:', tradeState.teams.length);
+    
+    if (tradeState.teams.length >= 3) {
+        console.log('addTradeTeam: Maximum teams reached');
+        return;
+    }
 
     if (!rosterId) {
         const teamIdsInTrade = tradeState.teams.map(t => t.rosterId);
         const availableTeam = allData.processedRosters.find(r => !teamIdsInTrade.includes(r.rosterId));
         if (availableTeam) rosterId = availableTeam.rosterId;
-        else return;
+        else {
+            console.log('addTradeTeam: No available team found');
+            return;
+        }
     }
 
     const tradeInterface = document.getElementById('tradeInterface');
@@ -1415,7 +1456,20 @@ function addTradeTeam(rosterId = null) {
             <select id="${columnId}-select">${optionsHtml}</select>
             ${removeButtonHtml}
         </div>
-        <div class="trade-player-list" id="${columnId}-list"></div>`;
+        <div class="team-summary-inline" id="${columnId}-summary">
+            <div class="team-name">${allData.processedRosters.find(r => r.rosterId === rosterId)?.teamName || 'Select Team'}</div>
+            <div class="net-value neutral">+0</div>
+        </div>
+        <div class="trade-team-content">
+            <div class="trade-roster-section">
+                <div class="section-header">Roster</div>
+                <div class="trade-player-list" id="${columnId}-list"></div>
+            </div>
+            <div class="trade-receiving-section">
+                <div class="section-header">Receiving</div>
+                <div class="trade-receiving-list" id="${columnId}-receiving"></div>
+            </div>
+        </div>`;
 
     let addTeamBtn = document.getElementById('addTeamContainer');
     if(addTeamBtn) {
@@ -1436,10 +1490,17 @@ function addTradeTeam(rosterId = null) {
     console.log('Trade Calculator: Adding team with rosterId:', rosterId);
     console.log('Trade Calculator: Team data:', allData.processedRosters.find(r => r.rosterId === rosterId));
     
-    tradeState.teams.push({ rosterId, columnEl, listElId: `${columnId}-list`, selectElId: `${columnId}-select` });
+    tradeState.teams.push({ 
+        rosterId, 
+        columnEl, 
+        listElId: `${columnId}-list`, 
+        selectElId: `${columnId}-select`,
+        receivingElId: `${columnId}-receiving`
+    });
     tradeState.tradeParts[rosterId] = { sending: new Map(), receiving: new Map() };
 
     renderTeamRoster(rosterId, `${columnId}-list`);
+    renderReceivingList(rosterId, `${columnId}-receiving`);
     calculateAndDisplayTrade();
     
     // Update the trade interface layout classes
@@ -1475,7 +1536,7 @@ function removeTradeTeam(teamIndex) {
     // Re-render the add team button
     renderAddTeamButton();
     
-    // Re-render all remaining team rosters
+    // Re-render all remaining team rosters and receiving lists
     renderAllTeamRosters();
     
     // Recalculate and display trade
@@ -1500,6 +1561,9 @@ function updateTradeInterfaceLayout() {
     } else if (teamCount === 3) {
         tradeInterface.classList.add('three-teams');
     }
+    
+    // Remove inline grid template columns - let CSS handle the responsive layout
+    tradeInterface.style.removeProperty('grid-template-columns');
 }
 
 function handleTeamChange(newRosterId, teamIndex) {
@@ -1518,6 +1582,16 @@ function handleTeamChange(newRosterId, teamIndex) {
         tradeState.tradeParts[rid] = { sending: new Map(), receiving: new Map() };
     });
 
+    // Update the team name in the inline summary
+    const summaryEl = document.getElementById(`trade-team-${teamIndex}-summary`);
+    if (summaryEl) {
+        const teamNameEl = summaryEl.querySelector('.team-name');
+        const newTeamInfo = allData.processedRosters.find(r => r.rosterId === newRosterId);
+        if (teamNameEl && newTeamInfo) {
+            teamNameEl.textContent = newTeamInfo.teamName;
+        }
+    }
+
     renderAllTeamRosters();
     calculateAndDisplayTrade();
     
@@ -1526,7 +1600,10 @@ function handleTeamChange(newRosterId, teamIndex) {
 }
 
 function renderAllTeamRosters() {
-    tradeState.teams.forEach(team => renderTeamRoster(team.rosterId, team.listElId));
+    tradeState.teams.forEach(team => {
+        renderTeamRoster(team.rosterId, team.listElId);
+        renderReceivingList(team.rosterId, team.receivingElId);
+    });
 }
 
 function renderTeamRoster(rosterId, listElId) {
@@ -1647,11 +1724,190 @@ function renderTeamRoster(rosterId, listElId) {
                 checkbox.dispatchEvent(new Event('change', { bubbles: true }));
             }
         });
+        
+        // Make roster players draggable
+        row.setAttribute('draggable', 'true');
+        row.addEventListener('dragstart', handleRosterPlayerDragStart);
+        row.addEventListener('dragend', handleRosterPlayerDragEnd);
     });
 
     listEl.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', handlePlayerSelection);
     });
+}
+
+function renderReceivingList(rosterId, receivingElId) {
+    console.log('renderReceivingList called:', { rosterId, receivingElId });
+    
+    const receivingEl = document.getElementById(receivingElId);
+    if (!receivingEl) {
+        console.error('Receiving element not found:', receivingElId);
+        return;
+    }
+    
+    const receivingPlayers = Array.from(tradeState.tradeParts[rosterId]?.receiving.values() || []);
+    console.log('Receiving players for roster', rosterId, ':', receivingPlayers);
+    
+    if (receivingPlayers.length === 0) {
+        receivingEl.innerHTML = '<div class="receiving-empty">No players being received</div>';
+        console.log('No receiving players, showing empty message');
+    } else {
+        let html = '<div class="receiving-players">';
+        receivingPlayers.forEach(player => {
+            html += createReceivingPlayerCard(player, rosterId);
+        });
+        html += '</div>';
+        
+        receivingEl.innerHTML = html;
+        console.log('Updated receiving list HTML for roster', rosterId);
+        
+        // Add drag and drop event listeners for receiving players
+        const playerCards = receivingEl.querySelectorAll('.receiving-player-card');
+        playerCards.forEach(card => {
+            card.setAttribute('draggable', 'true');
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragend', handleDragEnd);
+        });
+    }
+    
+    // Always add drag and drop event listeners to the receiving section itself (even when empty)
+    receivingEl.addEventListener('dragover', handleDragOver);
+    receivingEl.addEventListener('dragleave', handleDragLeave);
+    receivingEl.addEventListener('drop', handleDrop);
+    receivingEl.dataset.rosterId = rosterId;
+}
+
+function createReceivingPlayerCard(player, rosterId) {
+    const espnId = allData.espnIdMap[player.id];
+    const projection = espnId ? allData.projectionData[espnId] : null;
+    let projectionValue = 0;
+    let projectionText = 'N/A';
+    if (projection) {
+        if (appState.projectionMode === 'week') projectionValue = projection.weekProjection;
+        else if (appState.projectionMode === 'average') projectionValue = projection.seasonProjection;
+        else projectionValue = projection.seasonProjection * 17;
+        projectionText = projectionValue.toFixed(1);
+    }
+    
+    // Apply value normalization logic
+    let displayValue = player.value;
+    if (appState.valueNormalization === 'normalized' && player.rawValue !== undefined) {
+        displayValue = normalizeValue(player.rawValue, getMaxPlayerValue(allData.playerValues));
+    }
+    
+    return `
+    <div class="receiving-player-card" data-player-id="${player.id}" data-roster-id="${rosterId}">
+        <div class="player-info">
+            <div class="player-name">${player.name}</div>
+            <div class="player-details">${player.team}</div>
+        </div>
+        <div class="position-badge" data-position="${player.position}">${player.position}</div>
+        <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
+        <div class="player-value ${getValueClass(displayValue, player.position, appState.valueNormalization === 'normalized')}">${formatValue(displayValue, appState.valueNormalization === 'normalized')}</div>
+        <button class="remove-player-btn" onclick="removePlayerFromTrade('${player.id}', '${rosterId}', 'receiving')" title="Remove from trade">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>`;
+}
+
+// Drag and Drop Event Handlers for Receiving Players
+function handleDragStart(e) {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+        playerId: e.target.dataset.playerId,
+        rosterId: e.target.dataset.rosterId,
+        type: 'receiving'
+    }));
+    e.target.classList.add('dragging');
+}
+
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+// Drag and Drop Event Handlers for Roster Players
+function handleRosterPlayerDragStart(e) {
+    const playerRow = e.target.closest('.trade-player-row');
+    if (!playerRow) return;
+    
+    const playerId = playerRow.dataset.playerId;
+    const rosterId = playerRow.dataset.rosterId;
+    
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+        playerId: playerId,
+        rosterId: rosterId,
+        type: 'roster'
+    }));
+    
+    playerRow.classList.add('dragging');
+    console.log('Started dragging roster player:', { playerId, rosterId });
+}
+
+function handleRosterPlayerDragEnd(e) {
+    const playerRow = e.target.closest('.trade-player-row');
+    if (playerRow) {
+        playerRow.classList.remove('dragging');
+    }
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    
+    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+    const targetRosterId = e.currentTarget.dataset.rosterId;
+    
+    console.log('Drop event:', { data, targetRosterId });
+    
+    if (data.type === 'receiving' && data.rosterId !== targetRosterId) {
+        // Move player from one team's receiving list to another team's receiving list
+        const player = tradeState.tradeParts[data.rosterId].receiving.get(data.playerId);
+        if (player) {
+            // Remove from original team
+            tradeState.tradeParts[data.rosterId].receiving.delete(data.playerId);
+            // Add to target team
+            tradeState.tradeParts[targetRosterId].receiving.set(data.playerId, player);
+            
+            // Re-render both teams
+            renderReceivingList(data.rosterId, tradeState.teams.find(t => t.rosterId === data.rosterId).receivingElId);
+            renderReceivingList(targetRosterId, tradeState.teams.find(t => t.rosterId === targetRosterId).receivingElId);
+            calculateAndDisplayTrade();
+        }
+    } else if (data.type === 'roster' && data.rosterId !== targetRosterId) {
+        // Drag player from roster to receiving list of another team
+        const sourceRoster = allData.processedRosters.find(r => r.rosterId === data.rosterId);
+        const player = sourceRoster.players.find(p => p.id === data.playerId);
+        
+        if (player) {
+            console.log('Adding roster player to receiving list:', { player: player.name, targetTeam: targetRosterId });
+            
+            // Add to source team's sending list
+            tradeState.tradeParts[data.rosterId].sending.set(data.playerId, player);
+            // Add to target team's receiving list
+            tradeState.tradeParts[targetRosterId].receiving.set(data.playerId, player);
+            
+            // Re-render both teams to show strikethrough and receiving lists
+            const sourceTeam = tradeState.teams.find(t => t.rosterId === data.rosterId);
+            const targetTeam = tradeState.teams.find(t => t.rosterId === targetRosterId);
+            
+            if (sourceTeam) {
+                renderTeamRoster(data.rosterId, sourceTeam.listElId);
+            }
+            if (targetTeam) {
+                renderReceivingList(targetRosterId, targetTeam.receivingElId);
+            }
+            
+            calculateAndDisplayTrade();
+        }
+    }
 }
 
 function createTradePlayerRow(player, rosterId) {
@@ -1677,9 +1933,16 @@ function createTradePlayerRow(player, rosterId) {
         displayValue = player.value;
     }
     
+    // Check if this player is involved in a trade
+    const isInTrade = tradeState.tradeParts[rosterId]?.sending.has(player.id) || 
+                     Object.values(tradeState.tradeParts).some(parts => parts.receiving.has(player.id));
+    
+    const tradeClass = isInTrade ? 'in-trade' : '';
+    const checkboxChecked = isInTrade ? 'checked' : '';
+    
     return `
-    <div class="trade-player-row" data-player-id="${player.id}" data-roster-id="${rosterId}">
-        <input type="checkbox" id="trade-${rosterId}-${player.id}">
+    <div class="trade-player-row ${tradeClass}" data-player-id="${player.id}" data-roster-id="${rosterId}">
+        <input type="checkbox" id="trade-${rosterId}-${player.id}" ${checkboxChecked}>
         <div class="player-info">
             <div class="player-name">${player.name} <span class="player-team">${player.team || 'FA'}</span></div>
         </div>
@@ -1713,13 +1976,18 @@ function handlePlayerSelection(event) {
     const playerId = playerRow.dataset.playerId;
     const fromRosterId = playerRow.dataset.rosterId;
     
+    console.log('Player selection:', { playerId, fromRosterId, checked: checkbox.checked, teamsCount: tradeState.teams.length });
+    
     if (tradeState.teams.length === 2) {
         const toRosterId = tradeState.teams.find(t => t.rosterId !== fromRosterId).rosterId;
+        console.log('Two team trade, sending to:', toRosterId);
         updateTradeState(fromRosterId, toRosterId, playerId, checkbox.checked);
     } else {
         if (checkbox.checked) {
+            console.log('Three team trade, showing destination modal');
             showDestinationModal(fromRosterId, playerId, checkbox);
         } else {
+            console.log('Unchecking player, removing from trade');
             for (const team of tradeState.teams) {
                 if (tradeState.tradeParts[team.rosterId]?.receiving.has(playerId)) {
                     updateTradeState(fromRosterId, team.rosterId, playerId, false);
@@ -1759,13 +2027,40 @@ function updateTradeState(fromRosterId, toRosterId, playerId, isAdding) {
     const roster = allData.processedRosters.find(r => r.rosterId === fromRosterId);
     const playerObject = roster.players.find(p => p.id === playerId);
     
+    console.log('updateTradeState:', { fromRosterId, toRosterId, playerId, isAdding, playerObject });
+    
     if (isAdding) {
         tradeState.tradeParts[fromRosterId].sending.set(playerId, playerObject);
         tradeState.tradeParts[toRosterId].receiving.set(playerId, playerObject);
+        console.log('Added player to trade:', { 
+            sending: Array.from(tradeState.tradeParts[fromRosterId].sending.keys()),
+            receiving: Array.from(tradeState.tradeParts[toRosterId].receiving.keys())
+        });
     } else {
         tradeState.tradeParts[fromRosterId].sending.delete(playerId);
         tradeState.tradeParts[toRosterId].receiving.delete(playerId);
+        console.log('Removed player from trade');
     }
+    
+    // Re-render the receiving lists for both teams to show the changes
+    const fromTeam = tradeState.teams.find(t => t.rosterId === fromRosterId);
+    const toTeam = tradeState.teams.find(t => t.rosterId === toRosterId);
+    
+    console.log('Found teams:', { fromTeam: !!fromTeam, toTeam: !!toTeam });
+    
+    if (fromTeam) {
+        console.log('Re-rendering from team receiving list:', fromTeam.receivingElId);
+        renderReceivingList(fromRosterId, fromTeam.receivingElId);
+        // Also re-render the roster to show strikethrough
+        renderTeamRoster(fromRosterId, fromTeam.listElId);
+    }
+    if (toTeam) {
+        console.log('Re-rendering to team receiving list:', toTeam.receivingElId);
+        renderReceivingList(toRosterId, toTeam.receivingElId);
+        // Also re-render the roster to show strikethrough
+        renderTeamRoster(toRosterId, toTeam.listElId);
+    }
+    
     calculateAndDisplayTrade();
 }
 
@@ -1795,15 +2090,11 @@ function removePlayerFromTrade(playerId, rosterId, type) {
     // Update the trade display
     calculateAndDisplayTrade();
     
-    // Also update the checkbox in the main roster view
-    const playerRow = document.querySelector(`[data-player-id="${playerId}"]`);
-    if (playerRow) {
-        const checkbox = playerRow.querySelector('input[type="checkbox"]');
-        if (checkbox) {
-            checkbox.checked = false;
-            playerRow.classList.remove('involved');
-        }
-    }
+    // Re-render all team rosters to update strikethrough effects
+    tradeState.teams.forEach(team => {
+        renderTeamRoster(team.rosterId, team.listElId);
+        renderReceivingList(team.rosterId, team.receivingElId);
+    });
 }
 
 function createPlayerCard(player, type, rosterId) {
@@ -1874,6 +2165,9 @@ function calculateAndDisplayTrade() {
             receiving: receivingArray
         });
     });
+    
+    // Update inline team summaries
+    updateInlineTeamSummaries(teamsSummaryData);
     
     summaryContainer.innerHTML = '<div class="trade-summary-teams"></div><div class="trade-summary-players"></div><div class="trade-lineup-comparison"></div>';
     const teamsContainer = summaryContainer.querySelector('.trade-summary-teams');
@@ -1988,6 +2282,52 @@ function calculateAndDisplayTrade() {
         } else {
             row.classList.remove('involved');
             checkbox.checked = false;
+        }
+    });
+}
+
+function updateInlineTeamSummaries(teamsSummaryData) {
+    teamsSummaryData.forEach(data => {
+        const teamInfo = allData.processedRosters.find(r => r.rosterId === data.rosterId);
+        if (!teamInfo) return;
+        
+        // Find the team's summary element
+        const teamIndex = tradeState.teams.findIndex(t => t.rosterId === data.rosterId);
+        if (teamIndex === -1) return;
+        
+        const summaryEl = document.getElementById(`trade-team-${teamIndex}-summary`);
+        if (!summaryEl) return;
+        
+        // Calculate total value being sent for threshold comparison
+        const totalValueSent = data.sending.reduce((sum, p) => sum + p.rawValue, 0);
+        const threshold = totalValueSent * 0.05; // 5% of total value being sent
+        
+        // Determine CSS class based on net value and threshold
+        let valueClass;
+        if (data.netValue > 0) {
+            valueClass = 'positive';
+        } else if (data.netValue >= -threshold) {
+            valueClass = 'neutral';
+        } else {
+            valueClass = 'negative';
+        }
+        
+        // Format the net value according to normalization setting
+        let displayNetValue = data.netValue;
+        if (appState.valueNormalization === 'normalized') {
+            displayNetValue = normalizeValue(data.netValue, getMaxPlayerValue(allData.playerValues));
+        }
+        
+        // Update the team name and net value
+        const teamNameEl = summaryEl.querySelector('.team-name');
+        const netValueEl = summaryEl.querySelector('.net-value');
+        
+        if (teamNameEl) teamNameEl.textContent = teamInfo.teamName;
+        if (netValueEl) {
+            netValueEl.className = `net-value ${valueClass}`;
+            netValueEl.textContent = `${data.netValue >= 0 ? '+' : ''}${appState.valueNormalization === 'normalized' ? 
+                Math.round(displayNetValue) : 
+                Math.round(data.netValue).toLocaleString()}`;
         }
     });
 }
