@@ -2881,3 +2881,196 @@ body {
     font-size: 0.9rem;
     opacity: 0.8;
 }
+
+/* View Switcher Tabs */
+.view-switcher {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-primary);
+}
+
+.view-tab {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease-in-out;
+    margin-bottom: -2px; /* Align with border */
+}
+
+.view-tab:hover {
+    color: var(--text-primary);
+}
+
+.view-tab.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+/* Free Agents Layout */
+.free-agents-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.free-agents-grid {
+    display: block;
+    padding: 1rem 0;
+}
+
+.free-agent-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    transition: none;
+    position: relative;
+}
+
+.free-agent-card:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: transparent;
+}
+
+.free-agent-card.fa {
+    border-left: none;
+}
+
+.free-agent-card.user-roster {
+    border-left: none;
+}
+
+/* Free agent player rows - match roster analyzer styling */
+.free-agents-container .player-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-primary);
+    background: var(--surface-primary);
+}
+
+.free-agents-container .player-row:hover {
+    background: var(--surface-secondary);
+}
+
+.free-agents-container .player-row.user-roster {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.free-agents-container .player-row.free-agent {
+    background: var(--surface-primary);
+}
+
+.free-agents-container .player-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.free-agents-container .player-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.free-agents-container .player-details {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.free-agents-container .position-badge {
+    padding: 0.25rem 0.5rem;
+    background: var(--surface-secondary);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    min-width: 2rem;
+}
+
+.free-agents-container .player-projection,
+.free-agents-container .player-value {
+    text-align: center;
+    font-weight: 600;
+    min-width: 4rem;
+}
+
+.free-agent-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.free-agent-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.free-agent-status {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.free-agent-status.fa {
+    background: var(--accent-secondary);
+    color: white;
+}
+
+.free-agent-status.user-roster {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.free-agent-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.free-agent-detail {
+    text-align: center;
+}
+
+.free-agent-detail-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.free-agent-detail-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.free-agent-position {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: var(--surface-secondary);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    min-width: 2rem;
+}
+
+.free-agent-team {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: 0.5rem;
+}

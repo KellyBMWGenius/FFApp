@@ -38,7 +38,8 @@ let allData = {
     players: {},
     playerValues: {},
     projectionData: {},
-    processedRosters: []
+    processedRosters: [],
+    espnIdMap: {}
 };
 
 let appState = {
@@ -49,7 +50,9 @@ let appState = {
     projectionMode: 'average',
     valueNormalization: 'raw',
     theme: 'dark',
-    horizontalView: false
+    horizontalView: false,
+    freeAgentPositionFilter: 'all',
+    freeAgentSortBy: 'value'
 };
 
 // NEW: State for the trade calculator
@@ -1024,15 +1027,26 @@ function createPlayerRow(player) {
 function switchView(view) {
     const rosterAnalyzer = document.getElementById('rostersContainer');
     const tradeCalculator = document.getElementById('tradeCalculatorContainer');
+    const freeAgents = document.getElementById('freeAgentsContainer');
     const tradeSummary = document.getElementById('tradeSummary');
     const rosterBtn = document.getElementById('showRosterAnalyzerBtn');
     const tradeBtn = document.getElementById('showTradeCalculatorBtn');
+    const freeAgentsBtn = document.getElementById('showFreeAgentsBtn');
+
+    // Hide all containers first
+    rosterAnalyzer.style.display = 'none';
+    tradeCalculator.style.display = 'none';
+    freeAgents.style.display = 'none';
+    tradeSummary.style.display = 'none';
+
+    // Remove active class from all buttons
+    rosterBtn.classList.remove('active');
+    tradeBtn.classList.remove('active');
+    freeAgentsBtn.classList.remove('active');
 
     if (view === 'trade') {
-        rosterAnalyzer.style.display = 'none';
         tradeCalculator.style.display = 'flex';
         tradeSummary.style.display = 'block';
-        rosterBtn.classList.remove('active');
         tradeBtn.classList.add('active');
         if (tradeState.teams.length === 0 && allData.processedRosters.length > 0) {
             initTradeCalculator();
@@ -1040,12 +1054,22 @@ function switchView(view) {
             // Update trade calculator display option labels to match current app state
             updateTradeDisplayOptionLabels();
         }
+    } else if (view === 'free-agents') {
+        freeAgents.style.display = 'block';
+        freeAgentsBtn.classList.add('active');
+        if (allData.processedRosters && allData.processedRosters.length > 0) {
+            initFreeAgents();
+        } else {
+            console.log('Free Agents: No roster data available, loading data first...');
+            loadAllData().then(() => {
+                if (allData.processedRosters && allData.processedRosters.length > 0) {
+                    initFreeAgents();
+                }
+            });
+        }
     } else { // 'analyzer'
         rosterAnalyzer.style.display = 'block';
-        tradeCalculator.style.display = 'none';
-        tradeSummary.style.display = 'none';
         rosterBtn.classList.add('active');
-        tradeBtn.classList.remove('active');
     }
 }
 
@@ -2332,7 +2356,475 @@ function renderLineupPlayers(lineup, prefix, tradeInfo, positionChanges) {
 }
 
 // ==================================================================
-// == SECTION 5: EVENT LISTENERS & APP INITIALIZATION
+// == SECTION 5: FREE AGENTS LOGIC
+// ==================================================================
+
+function initFreeAgents() {
+    console.log('Free Agents: Initializing...');
+    
+    // Setup Free Agents controls
+    setupFreeAgentsControls();
+    
+    // Load and display free agents
+    loadAndDisplayFreeAgents();
+}
+
+function setupFreeAgentsControls() {
+    // Setup position filter dropdown
+    setupFreeAgentPositionFilter();
+    
+    // Setup projection mode dropdown
+    setupFreeAgentProjectionMode();
+    
+    // Setup value display dropdown
+    setupFreeAgentValueDisplay();
+    
+    // Setup sort by dropdown
+    setupFreeAgentSortBy();
+}
+
+function setupFreeAgentPositionFilter() {
+    const trigger = document.getElementById('freeAgentPositionFilterTrigger');
+    const options = document.getElementById('freeAgentPositionFilterOptions');
+    const label = document.getElementById('freeAgentPositionFilterLabel');
+    const select = trigger.closest('.custom-select');
+    
+    trigger.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        select.classList.toggle('active');
+    });
+    
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            label.textContent = text;
+            select.classList.remove('active');
+            appState.freeAgentPositionFilter = value;
+            loadAndDisplayFreeAgents();
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
+function setupFreeAgentProjectionMode() {
+    const trigger = document.getElementById('freeAgentProjectionModeTrigger');
+    const options = document.getElementById('freeAgentProjectionModeOptions');
+    const label = document.getElementById('freeAgentProjectionModeLabel');
+    const select = trigger.closest('.custom-select');
+    
+    trigger.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        select.classList.toggle('active');
+    });
+    
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            label.textContent = text;
+            select.classList.remove('active');
+            appState.projectionMode = value;
+            loadAndDisplayFreeAgents();
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
+function setupFreeAgentValueDisplay() {
+    const trigger = document.getElementById('freeAgentValueDisplayTrigger');
+    const options = document.getElementById('freeAgentValueDisplayOptions');
+    const label = document.getElementById('freeAgentValueDisplayLabel');
+    const select = trigger.closest('.custom-select');
+    
+    trigger.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        select.classList.toggle('active');
+    });
+    
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            label.textContent = text;
+            select.classList.remove('active');
+            appState.valueNormalization = value;
+            loadAndDisplayFreeAgents();
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
+function setupFreeAgentSortBy() {
+    const trigger = document.getElementById('freeAgentSortByTrigger');
+    const options = document.getElementById('freeAgentSortByOptions');
+    const label = document.getElementById('freeAgentSortByLabel');
+    const select = trigger.closest('.custom-select');
+    
+    trigger.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        select.classList.toggle('active');
+    });
+    
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            label.textContent = text;
+            select.classList.remove('active');
+            appState.freeAgentSortBy = value;
+            loadAndDisplayFreeAgents();
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
+async function loadAndDisplayFreeAgents() {
+    const container = document.getElementById('freeAgentsGrid');
+    const loading = document.getElementById('freeAgentsLoading');
+    
+    if (loading) {
+        loading.style.display = 'block';
+    }
+    
+    try {
+        console.log('Free Agents: Starting to load...');
+        
+        // Fetch FantasyCalc data directly from the API
+        console.log('Free Agents: Fetching FantasyCalc data...');
+        let fantasyCalcResponse;
+        try {
+            fantasyCalcResponse = await fetch('https://api.fantasycalc.com/values/current?isDynasty=false&numQbs=2&numTeams=10&ppr=1');
+            console.log('Free Agents: FantasyCalc response status:', fantasyCalcResponse.status);
+        } catch (fetchError) {
+            console.error('Free Agents: FantasyCalc fetch error:', fetchError);
+            throw new Error(`FantasyCalc fetch failed: ${fetchError.message}`);
+        }
+        
+        if (!fantasyCalcResponse.ok) {
+            throw new Error(`FantasyCalc API error: ${fantasyCalcResponse.status}`);
+        }
+        
+        let fantasyCalcData;
+        try {
+            fantasyCalcData = await fantasyCalcResponse.json();
+            console.log('Free Agents: FantasyCalc data received:', fantasyCalcData.length, 'players');
+        } catch (jsonError) {
+            console.error('Free Agents: FantasyCalc JSON parse error:', jsonError);
+            throw new Error(`FantasyCalc JSON parse failed: ${jsonError.message}`);
+        }
+        
+        // Fetch all rosters from Sleeper to get other teams' players
+        console.log('Free Agents: Fetching Sleeper rosters...');
+        let sleeperResponse;
+        try {
+            sleeperResponse = await fetch('https://api.sleeper.app/v1/league/1257448634119626752/rosters');
+            console.log('Free Agents: Sleeper response status:', sleeperResponse.status);
+        } catch (fetchError) {
+            console.error('Free Agents: Sleeper fetch error:', fetchError);
+            throw new Error(`Sleeper fetch failed: ${fetchError.message}`);
+        }
+        
+        if (!sleeperResponse.ok) {
+            throw new Error(`Sleeper API error: ${sleeperResponse.status}`);
+        }
+        
+        let sleeperRosters;
+        try {
+            sleeperRosters = await sleeperResponse.json();
+            console.log('Free Agents: Sleeper rosters received:', sleeperRosters.length, 'rosters');
+        } catch (jsonError) {
+            console.error('Free Agents: Sleeper JSON parse error:', jsonError);
+            throw new Error(`Sleeper JSON parse failed: ${jsonError.message}`);
+        }
+        
+        // Get current user's roster ID
+        const userRoster = allData.processedRosters.find(r => r.user?.user_id === userAuth.userId);
+        if (!userRoster) {
+            throw new Error('User roster not found in processed rosters');
+        }
+        console.log('Free Agents: User roster found:', userRoster.rosterId);
+        
+        // Create a set of all player IDs that are NOT on the user's team
+        const otherTeamsPlayerIds = new Set();
+        sleeperRosters.forEach(roster => {
+            // Convert roster_id to string for comparison with userRoster.rosterId
+            const sleeperRosterId = roster.roster_id.toString();
+            if (sleeperRosterId !== userRoster.rosterId) {
+                // This is another team's roster
+                if (roster.players) {
+                    roster.players.forEach(playerId => {
+                        otherTeamsPlayerIds.add(playerId);
+                    });
+                }
+            }
+        });
+        console.log('Free Agents: Other teams have', otherTeamsPlayerIds.size, 'players');
+        
+        // Process FantasyCalc players to create unified player list
+        const allPlayers = processAllPlayers(fantasyCalcData, otherTeamsPlayerIds, userRoster);
+        console.log('Free Agents: Processed', allPlayers.length, 'total players');
+        
+        // Display all players in unified list
+        displayAllPlayers(allPlayers);
+        
+        // Debug: Show some raw data for troubleshooting
+        console.log('Free Agents: Debug - First 3 FantasyCalc players:', fantasyCalcData.slice(0, 3));
+        console.log('Free Agents: Debug - User roster ID:', userRoster.rosterId);
+        console.log('Free Agents: Debug - Other teams player count:', otherTeamsPlayerIds.size);
+        
+        // If no players found, show some raw data for debugging
+        if (allPlayers.length === 0) {
+            console.log('Free Agents: No players found, showing raw data for debugging');
+            console.log('Free Agents: Raw FantasyCalc data sample:', fantasyCalcData.slice(0, 5));
+            console.log('Free Agents: Raw Sleeper rosters sample:', sleeperRosters.slice(0, 3));
+            
+            // Show a fallback display with raw data for debugging
+            const container = document.getElementById('freeAgentsGrid');
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; padding: 2rem;">
+                    <h3>Debug Information - No Players Found</h3>
+                    <p>FantasyCalc players: ${fantasyCalcData.length}</p>
+                    <p>Sleeper rosters: ${sleeperRosters.length}</p>
+                    <p>User roster ID: ${userRoster.rosterId}</p>
+                    <p>Other teams players: ${otherTeamsPlayerIds.size}</p>
+                    <details>
+                        <summary>Sample FantasyCalc Data</summary>
+                        <pre>${JSON.stringify(fantasyCalcData.slice(0, 3), null, 2)}</pre>
+                    </details>
+                    <details>
+                        <summary>Sample Sleeper Rosters</summary>
+                        <pre>${JSON.stringify(sleeperRosters.slice(0, 2), null, 2)}</pre>
+                    </details>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Error loading free agents:', error);
+        container.innerHTML = `<div class="error-message">Failed to load free agents: ${error.message}</div>`;
+    } finally {
+        if (loading) {
+            loading.style.display = 'none';
+        }
+    }
+}
+
+
+
+function processAllPlayers(fantasyCalcPlayers, otherTeamsPlayerIds, userRoster) {
+    const allPlayers = [];
+    
+    console.log('Free Agents: Processing', fantasyCalcPlayers.length, 'FantasyCalc players');
+    console.log('Free Agents: Sample player structure:', fantasyCalcPlayers[0]);
+    
+    fantasyCalcPlayers.forEach((player, index) => {
+        // Skip if no player data
+        if (!player || !player.player) {
+            console.log('Free Agents: Skipping invalid player at index', index);
+            return;
+        }
+        
+        // Check if player has sleeperId
+        if (!player.player.sleeperId) {
+            console.log('Free Agents: Skipping player without sleeperId:', player.player.name || 'Unknown');
+            return;
+        }
+        
+        const sleeperId = player.player.sleeperId;
+        const isOnOtherTeam = otherTeamsPlayerIds.has(sleeperId);
+        const isOnUserTeam = isPlayerOnUserTeam(sleeperId, userRoster);
+        
+        // Skip players on other teams - they're not available
+        if (isOnOtherTeam) {
+            console.log('Free Agents: Skipping player on other team:', player.player.name, 'ID:', sleeperId);
+            return;
+        }
+        
+        // Skip if position filter is applied and doesn't match
+        if (appState.freeAgentPositionFilter !== 'all' && player.player.position !== appState.freeAgentPositionFilter) {
+            return;
+        }
+        
+        const playerData = {
+            id: sleeperId,
+            name: player.player.name,
+            position: player.player.position,
+            team: player.player.maybeTeam || 'FA',
+            value: player.value,
+            isOnUserTeam,
+            espnId: player.player.espnId,
+            sleeperId: player.player.sleeperId
+        };
+        
+        allPlayers.push(playerData);
+    });
+    
+    console.log('Free Agents: Found', allPlayers.length, 'total available players');
+    
+    // Sort all players based on current sort criteria (default to value)
+    allPlayers.sort((a, b) => {
+        switch (appState.freeAgentSortBy) {
+            case 'projection':
+                const aProjection = getPlayerProjection(a.espnId);
+                const bProjection = getPlayerProjection(b.espnId);
+                return bProjection - aProjection;
+            case 'name':
+                return a.name.localeCompare(b.name);
+            case 'value':
+            default:
+                return b.value - a.value;
+        }
+    });
+    
+    return allPlayers;
+}
+
+function isPlayerOnUserTeam(sleeperId, userRoster) {
+    if (!userRoster || !userRoster.organized) return false;
+    
+    // Check all organized sections (starters, bench, etc.)
+    for (const section in userRoster.organized) {
+        if (Array.isArray(userRoster.organized[section])) {
+            // Direct array of players
+            if (userRoster.organized[section].some(player => player.id === sleeperId)) {
+                return true;
+            }
+        } else if (typeof userRoster.organized[section] === 'object') {
+            // Object with position groups
+            for (const position in userRoster.organized[section]) {
+                if (Array.isArray(userRoster.organized[section][position])) {
+                    if (userRoster.organized[section][position].some(player => player.id === sleeperId)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+function getPlayerProjection(espnId) {
+    if (!espnId || !allData.projectionData[espnId]) return 0;
+    
+    const projection = allData.projectionData[espnId];
+    switch (appState.projectionMode) {
+        case 'week':
+            return projection.weekProjection;
+        case 'average':
+            return projection.seasonProjection;
+        case 'season':
+            return projection.seasonProjection * 17;
+        default:
+            return projection.seasonProjection;
+    }
+}
+
+function displayAllPlayers(allPlayers) {
+    const container = document.getElementById('freeAgentsGrid');
+    const loading = document.getElementById('freeAgentsLoading');
+    const section = document.getElementById('freeAgentsSection');
+    const playersContainer = document.getElementById('freeAgentsPlayers');
+    
+    if (loading) {
+        loading.style.display = 'none';
+    }
+    
+    if (allPlayers.length === 0) {
+        section.style.display = 'none';
+        container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem;"><p>No players found matching your filters</p><p>This could mean all players are rostered, or there was an issue processing the data.</p></div>';
+        return;
+    }
+    
+    // Update the position count
+    const countElement = section.querySelector('.position-count');
+    countElement.textContent = `Position Count: ${allPlayers.length}`;
+    
+    // Clear and populate players
+    playersContainer.innerHTML = '';
+    
+    allPlayers.forEach(player => {
+        const card = createFreeAgentCard(player);
+        playersContainer.appendChild(card);
+    });
+    
+    // Show the section
+    section.style.display = 'block';
+}
+
+function createFreeAgentCard(player) {
+    const card = document.createElement('div');
+    card.className = `player-row ${player.isOnUserTeam ? 'user-roster' : 'free-agent'}`;
+    
+    const espnId = player.espnId;
+    const projection = espnId ? allData.projectionData[espnId] : null;
+    let projectionValue = 0;
+    let projectionText = 'N/A';
+    
+    if (projection) {
+        if (appState.projectionMode === 'week') projectionValue = projection.weekProjection;
+        else if (appState.projectionMode === 'average') projectionValue = projection.seasonProjection;
+        else projectionValue = projection.seasonProjection * 17;
+        projectionText = projectionValue.toFixed(1);
+    }
+    
+    let displayValue = player.value;
+    if (appState.valueNormalization === 'normalized') {
+        displayValue = normalizeValue(player.value, getMaxPlayerValue(allData.playerValues));
+    }
+    
+    // Use the exact same format as the roster analyzer
+    card.innerHTML = `
+        <div class="player-info">
+            <div class="player-name">${player.name}</div>
+            <div class="player-details">${player.team}</div>
+        </div>
+        <div class="position-badge">${player.position}</div>
+        <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
+        <div class="player-value ${getValueClass(player.value, player.position, appState.valueNormalization === 'normalized')}">${formatValue(displayValue, appState.valueNormalization === 'normalized')}</div>`;
+    
+    return card;
+}
+
+// ==================================================================
+// == SECTION 6: EVENT LISTENERS & APP INITIALIZATION
 // ==================================================================
 
 function setupEventListeners() {
@@ -2351,6 +2843,7 @@ function setupEventListeners() {
     document.getElementById('rostersGrid')?.addEventListener('scroll', updateScrollPositionIndicator, { passive: true });
     document.getElementById('showRosterAnalyzerBtn').addEventListener('click', () => switchView('analyzer'));
     document.getElementById('showTradeCalculatorBtn').addEventListener('click', () => switchView('trade'));
+    document.getElementById('showFreeAgentsBtn').addEventListener('click', () => switchView('free-agents'));
     
     // Setup projection mode and value display dropdowns
     setupProjectionModeDropdown();
@@ -3152,3 +3645,185 @@ function enterSelectedLeague() {
     // Load the selected league
     loadAllData();
 }
+
+// ==================================================================
+// == SECTION 5: FREE AGENTS LOGIC
+// ==================================================================
+
+function initFreeAgents() {
+    console.log('Free Agents: Initializing...');
+    
+    // Setup Free Agents controls
+    setupFreeAgentsControls();
+    
+    // Load and display free agents
+    loadAndDisplayFreeAgents();
+}
+
+function setupFreeAgentsControls() {
+    // Setup position filter dropdown
+    setupFreeAgentPositionFilter();
+    
+    // Setup projection mode dropdown
+    setupFreeAgentProjectionMode();
+    
+    // Setup value display dropdown
+    setupFreeAgentValueDisplay();
+    
+    // Setup sort by dropdown
+    setupFreeAgentSortBy();
+}
+
+function setupFreeAgentPositionFilter() {
+    const trigger = document.getElementById('freeAgentPositionFilterTrigger');
+    const options = document.getElementById('freeAgentPositionFilterOptions');
+    const label = document.getElementById('freeAgentPositionFilterLabel');
+    const select = trigger.closest('.custom-select');
+    
+    trigger.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        select.classList.toggle('active');
+    });
+    
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            label.textContent = text;
+            select.classList.remove('active');
+            appState.freeAgentPositionFilter = value;
+            loadAndDisplayFreeAgents();
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
+function setupFreeAgentProjectionMode() {
+    const trigger = document.getElementById('freeAgentProjectionModeTrigger');
+    const options = document.getElementById('freeAgentProjectionModeOptions');
+    const label = document.getElementById('freeAgentProjectionModeLabel');
+    const select = trigger.closest('.custom-select');
+    
+    trigger.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        select.classList.toggle('active');
+    });
+    
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            label.textContent = text;
+            select.classList.remove('active');
+            appState.projectionMode = value;
+            loadAndDisplayFreeAgents();
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
+function setupFreeAgentValueDisplay() {
+    const trigger = document.getElementById('freeAgentValueDisplayTrigger');
+    const options = document.getElementById('freeAgentValueDisplayOptions');
+    const label = document.getElementById('freeAgentValueDisplayLabel');
+    const select = trigger.closest('.custom-select');
+    
+    trigger.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        select.classList.toggle('active');
+    });
+    
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            label.textContent = text;
+            select.classList.remove('active');
+            appState.valueNormalization = value;
+            loadAndDisplayFreeAgents();
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
+function setupFreeAgentSortBy() {
+    const trigger = document.getElementById('freeAgentSortByTrigger');
+    const options = document.getElementById('freeAgentSortByOptions');
+    const label = document.getElementById('freeAgentSortByLabel');
+    const select = trigger.closest('.custom-select');
+    
+    trigger.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        select.classList.toggle('active');
+    });
+    
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            label.textContent = text;
+            select.classList.remove('active');
+            appState.freeAgentSortBy = value;
+            loadAndDisplayFreeAgents();
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
+
+
+function getPlayerProjection(espnId) {
+    if (!espnId || !allData.projectionData[espnId]) return 0;
+    
+    const projection = allData.projectionData[espnId];
+    switch (appState.projectionMode) {
+        case 'week':
+            return projection.weekProjection;
+        case 'average':
+            return projection.seasonProjection;
+        case 'season':
+            return projection.seasonProjection * 17;
+        default:
+            return projection.seasonProjection;
+    }
+}
+
+
+
+
