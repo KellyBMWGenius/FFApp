@@ -999,11 +999,7 @@ body {
     min-height: 0;
 }
 
-/* Add specific alignment for the scoring explanation and summary sections */
-.rosters-grid .roster-card[data-view-mode="positional"] .scoring-explanation,
-.rosters-grid .roster-card[data-view-mode="positional"] .positional-scores-summary {
-    flex-shrink: 0;
-}
+
 
 /* Ensure empty rows don't affect alignment */
 .rosters-grid .roster-card[data-view-mode="positional"] .player-row.empty {
@@ -1019,81 +1015,11 @@ body {
     align-items: center;
 }
 
-.position-score {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    min-width: 2rem;
-    text-align: center;
-    color: white;
-}
-.position-score.score-excellent { background: #10b981; color: white; }
-.position-score.score-good { background: #16a34a; color: white; }
-.position-score.score-average { background: #ca8a04; color: white; }
-.position-score.score-poor { background: #dc2626; color: white; }
 
-.scoring-explanation {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    text-align: center;
-}
 
-.explanation-text {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    font-style: italic;
-}
 
-.positional-scores-summary {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-}
 
-.summary-header {
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.75rem;
-    text-align: center;
-    font-size: 0.9rem;
-}
 
-.summary-table {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 0.5rem;
-}
-
-.summary-row.header {
-    font-weight: 600;
-    color: var(--text-primary);
-    border-bottom: 1px solid var(--border-primary);
-    padding-bottom: 0.5rem;
-}
-
-.summary-row { display: contents; }
-
-.summary-cell {
-    padding: 0.5rem;
-    text-align: center;
-    font-size: 0.85rem;
-}
-
-.summary-cell.position-name {
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.summary-cell .position-score {
-    display: inline-block;
-    min-width: 2.5rem;
-}
 
 .roster-card[data-view-mode="positional"] .column-headers,
 .roster-card[data-view-mode="positional"] .player-row {
@@ -1767,50 +1693,7 @@ body {
     margin: 0;
 }
 
-.trade-player-list .positional-scores-summary {
-    background: var(--bg-card);
-    border-radius: 8px;
-    padding: 0.75rem;
-    margin-bottom: 0.75rem;
-    border: 1px solid var(--border-secondary);
-}
 
-.trade-player-list .summary-header {
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
-    text-align: center;
-    font-size: 0.9rem;
-}
-
-.trade-player-list .summary-table {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 0.25rem;
-    font-size: 0.8rem;
-}
-
-.trade-player-list .summary-row {
-    display: contents;
-}
-
-.trade-player-list .summary-row.header {
-    font-weight: 600;
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-secondary);
-    padding-bottom: 0.15rem;
-    margin-bottom: 0.15rem;
-}
-
-.trade-player-list .summary-cell {
-    padding: 0.15rem;
-    text-align: center;
-}
-
-.trade-player-list .summary-cell.position-name {
-    text-align: left;
-    font-weight: 500;
-}
 
 .trade-player-list .position-section {
     background: var(--bg-card);
@@ -1839,34 +1722,9 @@ body {
     font-weight: 500;
 }
 
-.trade-player-list .position-score {
-    background: var(--bg-tertiary);
-    padding: 0.2rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-left: auto;
-}
 
-.trade-player-list .position-score.score-excellent {
-    background: #10b981;
-    color: white;
-}
 
-.trade-player-list .position-score.score-good {
-    background: #16a34a;
-    color: white;
-}
 
-.trade-player-list .position-score.score-average {
-    background: #ca8a04;
-    color: white;
-}
-
-.trade-player-list .position-score.score-poor {
-    background: #dc2626;
-    color: white;
-}
 
 .trade-player-list .column-headers {
     display: grid;

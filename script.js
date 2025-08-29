@@ -502,26 +502,7 @@ function calculateOverallPositionalScore(positionalScores) {
     return Math.round(totalScore / validPositions);
 }
 
-function getScoreClass(score, position = null, allPositionalScores = null) {
-    if (score === null || score === undefined || score === 0) return 'poor';
-    if (allPositionalScores && position) {
-        const positionScores = allPositionalScores
-            .map(roster => roster.stats.positionalScores?.[position]?.normalized)
-            .filter(score => score !== null && score !== undefined)
-            .sort((a, b) => a - b);
-        if (positionScores.length > 0) {
-            const sortedScores = positionScores.sort((a, b) => a - b);
-            const scoreIndex = sortedScores.findIndex(s => s >= score);
-            const percentile = scoreIndex >= 0 ? (scoreIndex / sortedScores.length) * 100 : 0;
-            if (percentile >= 70) return 'good';
-            if (percentile >= 30) return 'average';
-            return 'poor';
-        }
-    }
-    if (score >= 55) return 'good';
-    if (score >= 30) return 'average';
-    return 'poor';
-}
+
 
 // ==================================================================
 // == SECTION 3: ORIGINAL APPLICATION LOGIC (ROSTER ANALYZER UI & DOM)
@@ -897,34 +878,20 @@ function createPositionSections(roster, maxData = null) {
     if (appState.rosterView === 'position-groups') {
         const positions = ['QB', 'RB', 'WR', 'TE'];
         const organized = roster.organized || {};
-        const positionalScores = roster.stats.positionalScores || {};
-        html += '<div class="scoring-explanation"><div class="explanation-text">Positional scores (0-100) weight starters highest, then flex depth, then additional depth</div></div>';
-        html += '<div class="positional-scores-summary"><div class="summary-header">Positional Scores Summary</div><div class="summary-table">';
-        html += '<div class="summary-row header"><div class="summary-cell">Position</div><div class="summary-cell">Score</div><div class="summary-cell">Players</div></div>';
-        positions.forEach(pos => {
-            const posScore = positionalScores[pos];
-            if (posScore) {
-                html += `<div class="summary-row">
-                    <div class="summary-cell position-name">${pos}</div>
-                    <div class="summary-cell"><span class="position-score score-${getScoreClass(posScore.normalized, pos, allData.processedRosters)}">${posScore.normalized}</span></div>
-                    <div class="summary-cell">${posScore.playerCount}</div>
-                </div>`;
-            }
-        });
-        html += '</div></div>';
+
         
         positions.forEach(position => {
             const players = organized[position] || [];
             const maxPlayers = maxData ? maxData.counts[position] : players.length;
             const maxHeight = maxData ? maxData.heights[position] : null;
-            const positionScore = positionalScores[position];
+
             
             if (maxPlayers > 0) {
                 const styleAttr = maxHeight ? `style="min-height: ${maxHeight}px;"` : '';
                 html += `<div class="position-section" data-position="${position}" ${styleAttr}>
                     <div class="position-header">
                         ${position} <span class="position-count">Position Count: ${players.length}</span>
-                        ${positionScore ? `<span class="position-score score-${getScoreClass(positionScore.normalized, position, allData.processedRosters)}">Position Score: ${positionScore.normalized}</span>` : ''}
+
                     </div>
                     <div class="column-headers"><div class="header-player">Player</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>`;
                 
@@ -1647,23 +1614,6 @@ function renderTeamRoster(rosterId, listElId) {
     } else if (tradeState.viewMode === 'positional') {
         // Positional Overview mode - show players by position with checkboxes
         const positions = ['QB', 'RB', 'WR', 'TE'];
-        const positionalScores = roster.stats.positionalScores || {};
-        
-        html += '<div class="scoring-explanation"><div class="explanation-text">Positional scores (0-100) weight starters highest, then flex depth, then additional depth</div></div>';
-        html += '<div class="positional-scores-summary"><div class="summary-header">Positional Scores Summary</div><div class="summary-table">';
-        html += '<div class="summary-row header"><div class="summary-cell">Position</div><div class="summary-cell">Score</div><div class="summary-cell">Players</div></div>';
-        
-        positions.forEach(pos => {
-            const posScore = positionalScores[pos];
-            if (posScore) {
-                html += `<div class="summary-row">
-                    <div class="summary-cell position-name">${pos}</div>
-                    <div class="summary-cell"><span class="position-score score-${getScoreClass(posScore.normalized, pos, allData.processedRosters)}">${posScore.normalized}</span></div>
-                    <div class="summary-cell">${posScore.playerCount}</div>
-                </div>`;
-            }
-        });
-        html += '</div></div>';
         
         // Add column headers for the player list
         html += '<div class="column-headers"><div class="header-player">Player</div><div class="header-position">Position</div><div class="header-projection">Projection</div><div class="header-value">Value</div></div>';
@@ -1675,7 +1625,6 @@ function renderTeamRoster(rosterId, listElId) {
                 html += `<div class="position-section">
                     <div class="position-header">
                         ${position} <span class="position-count">Position Count: ${players.length}</span>
-                        ${positionalScores[position] ? `<span class="position-score score-${getScoreClass(positionalScores[position].normalized, position, allData.processedRosters)}">Position Score: ${positionalScores[position].normalized}</span>` : ''}
                     </div>`;
                 players.forEach(player => { 
                     console.log(`Trade Calculator: Creating row for player:`, player);
