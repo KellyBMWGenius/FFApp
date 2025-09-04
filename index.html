@@ -87,86 +87,139 @@
                 </div>
 
                 <div class="rosters-container" id="rostersContainer">
-                    <header class="controls-header">
-                        <div class="control-item">
-                            <label for="teamSelect">Teams:</label>
-                            <div class="custom-select" id="teamSelect">
-                                <div class="select-trigger" id="teamSelectTrigger">
-                                    <span id="teamSelectLabel">All Teams</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="select-options" id="teamSelectOptions">
-                                    <div class="select-option" data-value="all">
-                                        <input type="checkbox" id="selectAll" checked>
-                                        <label for="selectAll">All Teams</label>
+                    <div class="controls-wrapper">
+                        <header class="controls-header primary-controls">
+                            <div class="control-item">
+                                <label for="teamSelect">Teams:</label>
+                                <div class="custom-select" id="teamSelect">
+                                    <div class="select-trigger" id="teamSelectTrigger">
+                                        <span id="teamSelectLabel">All Teams</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="select-options" id="teamSelectOptions">
+                                        <div class="select-option" data-value="all">
+                                            <input type="checkbox" id="selectAll" checked>
+                                            <label for="selectAll">All Teams</label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="control-item">
-                            <div class="toggle-buttons" id="roster-view-selector">
-                                <button class="active" data-view="optimal">Optimal Roster</button>
-                                <button data-view="all-players">All Players</button>
-                                <button data-view="position-groups">Position Groups</button>
-                            </div>
-                        </div>
-
-                        <div class="control-item">
-                            <label for="teamSortBy">Sort Teams:</label>
-                            <div class="custom-select" id="teamSortBySelect">
-                                <div class="select-trigger" id="teamSortByTrigger">
-                                    <span id="teamSortByLabel">Total Value</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="select-options" id="teamSortByOptions">
-                                    <div class="select-option" data-value="value">Total Value</div>
-                                    <div class="select-option" data-value="starter-value">Starter Value</div>
-                                    <div class="select-option" data-value="weekly-points">Weekly Points</div>
-                                    <div class="select-option" data-value="name">Team Name</div>
+                            <div class="control-item">
+                                <div class="toggle-buttons" id="roster-view-selector">
+                                    <button class="active" data-view="optimal">Optimal Roster</button>
+                                    <button data-view="all-players">All Players</button>
+                                    <button data-view="position-groups">Position Groups</button>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="control-item">
-                            <label for="projectionMode">Projection Mode:</label>
-                            <div class="custom-select" id="projectionModeSelect">
-                                <div class="select-trigger" id="projectionModeTrigger">
-                                    <span id="projectionModeLabel">Average</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="select-options" id="projectionModeOptions">
-                                    <div class="select-option" data-value="week">Week 1 Projection</div>
-                                    <div class="select-option" data-value="average">Average</div>
-                                    <div class="select-option" data-value="season">Season Total</div>
+                            <div class="control-item">
+                                <label for="teamSortBy">Sort Teams:</label>
+                                <div class="custom-select" id="teamSortBySelect">
+                                    <div class="select-trigger" id="teamSortByTrigger">
+                                        <span id="teamSortByLabel">Total Value</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="select-options" id="teamSortByOptions">
+                                        <div class="select-option" data-value="value">Total Value</div>
+                                        <div class="select-option" data-value="starter-value">Starter Value</div>
+                                        <div class="select-option" data-value="weekly-points">Weekly Points</div>
+                                        <div class="select-option" data-value="name">Team Name</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="control-item">
-                            <label for="valueDisplay">Value Display:</label>
-                            <div class="custom-select" id="valueDisplaySelect">
-                                <div class="select-trigger" id="valueDisplayTrigger">
-                                    <span id="valueDisplayLabel">Raw Values</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="select-options" id="valueDisplayOptions">
-                                    <div class="select-option" data-value="raw">Raw Values</div>
-                                    <div class="select-option" data-value="normalized">Normalized (0-100)</div>
+                            <button class="horizontal-view-btn" id="horizontalViewBtn" title="Toggle horizontal view for side-by-side roster comparison (Ctrl+H)">
+                                <i class="fas fa-arrows-alt-h"></i>
+                            </button>
+
+                            <button class="secondary-controls-toggle" id="secondaryControlsToggle" title="Show/Hide advanced settings">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </header>
+
+                        <header class="controls-header secondary-controls">
+                            <div class="control-item">
+                                <label for="projectionMode">Projection Mode:</label>
+                                <div class="custom-select" id="projectionModeSelect">
+                                    <div class="select-trigger" id="projectionModeTrigger">
+                                        <span id="projectionModeLabel">Average</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="select-options" id="projectionModeOptions">
+                                        <div class="select-option" data-value="week">Week 1 Projection</div>
+                                        <div class="select-option" data-value="average">Average</div>
+                                        <div class="select-option" data-value="season">Season Total</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <button class="horizontal-view-btn" id="horizontalViewBtn" title="Toggle horizontal view for side-by-side roster comparison (Ctrl+H)">
-                            <i class="fas fa-arrows-alt-h"></i>
-                        </button>
-                    </header>
+                            <div class="control-item">
+                                <label for="valueDisplay">Value Display:</label>
+                                <div class="custom-select" id="valueDisplaySelect">
+                                    <div class="select-trigger" id="valueDisplayTrigger">
+                                        <span id="valueDisplayLabel">Raw Values</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="select-options" id="valueDisplayOptions">
+                                        <div class="select-option" data-value="raw">Raw Values</div>
+                                        <div class="select-option" data-value="normalized">Normalized (0-100)</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="control-item">
+                                <label for="optimalMethod">Optimal Roster:</label>
+                                <div class="custom-select" id="optimalMethodSelect">
+                                    <div class="select-trigger" id="optimalMethodTrigger">
+                                        <span id="optimalMethodLabel">Weekly Points</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="select-options" id="optimalMethodOptions">
+                                        <div class="select-option" data-value="points">Weekly Points</div>
+                                        <div class="select-option" data-value="value">Player Value</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </header>
+                    </div>
 
                     <div class="horizontal-view-help" id="horizontalViewHelp"></div>
                     <div class="rosters-grid" id="rostersGrid"></div>
                 </div>
 
                 <div class="trade-calculator-container" id="tradeCalculatorContainer" style="display: none;">
+                    <header class="controls-header">
+                        <div class="control-item">
+                            <label for="tradeTeamSortBy">Trade View:</label>
+                            <div class="custom-select" id="tradeTeamSortBySelect">
+                                <div class="select-trigger" id="tradeTeamSortByTrigger">
+                                    <span id="tradeTeamSortByLabel">High to Low Value</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="select-options" id="tradeTeamSortByOptions">
+                                    <div class="select-option" data-value="value">High to Low Value</div>
+                                    <div class="select-option" data-value="optimal">Starter Positions + Bench</div>
+                                    <div class="select-option" data-value="positional">Positional Overview</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <label for="tradeOptimalMethod">Optimal Roster:</label>
+                            <div class="custom-select" id="tradeOptimalMethodSelect">
+                                <div class="select-trigger" id="tradeOptimalMethodTrigger">
+                                    <span id="tradeOptimalMethodLabel">Weekly Points</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="select-options" id="tradeOptimalMethodOptions">
+                                    <div class="select-option" data-value="points">Weekly Points</div>
+                                    <div class="select-option" data-value="value">Player Value</div>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                    
                     <div class="trade-interface" id="tradeInterface">
                         </div>
                     <div class="trade-summary" id="tradeSummary" style="display: none;"></div>

@@ -52,14 +52,16 @@ let appState = {
     theme: 'dark',
     horizontalView: false,
     freeAgentPositionFilter: 'all',
-    freeAgentSortBy: 'value'
+    freeAgentSortBy: 'value',
+    optimalMethod: 'points' // 'points' or 'value'
 };
 
 // NEW: State for the trade calculator
 let tradeState = {
     teams: [], // Will store { rosterId, columnEl, listElId, selectElId }
     tradeParts: {}, // e.g., { 'rosterId1': { sending: Map(), receiving: Map() } }
-    viewMode: 'optimal' // Add view mode state for trade calculator
+    viewMode: 'optimal', // Add view mode state for trade calculator
+    optimalMethod: 'points' // 'points' or 'value' for optimal roster calculation
 };
 
 // Debug tracking
@@ -127,6 +129,23 @@ function toggleHorizontalView() {
         rostersContainer.removeAttribute('data-team-count');
     }
     localStorage.setItem('ffapp-horizontal-view', appState.horizontalView);
+}
+
+function toggleSecondaryControls() {
+    const secondaryControls = document.querySelector('.controls-header.secondary-controls');
+    const toggleBtn = document.getElementById('secondaryControlsToggle');
+    
+    if (secondaryControls.classList.contains('expanded')) {
+        // Hide secondary controls
+        secondaryControls.classList.remove('expanded');
+        toggleBtn.classList.remove('active');
+        toggleBtn.title = 'Show advanced settings';
+    } else {
+        // Show secondary controls
+        secondaryControls.classList.add('expanded');
+        toggleBtn.classList.add('active');
+        toggleBtn.title = 'Hide advanced settings';
+    }
 }
 
 function updateThemeIcon(theme) {
@@ -411,12 +430,15 @@ function organizePlayersByPosition(players) {
     
     CONFIG.positions.starters.forEach(positionDef => {
         for (let i = 0; i < positionDef.count; i++) {
-            let bestPlayerIndex = -1, bestProjection = -1;
+            let bestPlayerIndex = -1, bestScore = -1;
             availablePlayers.forEach((player, index) => {
                 if (positionDef.positions.includes(player.position)) {
-                    const projectedPoints = getPlayerProjectedPoints(player, appState.projectionMode);
-                    if (projectedPoints > bestProjection) {
-                        bestProjection = projectedPoints;
+                    // Use either projected points or value based on optimalMethod setting
+                    const score = appState.optimalMethod === 'value' 
+                        ? player.value 
+                        : getPlayerProjectedPoints(player, appState.projectionMode);
+                    if (score > bestScore) {
+                        bestScore = score;
                         bestPlayerIndex = index;
                     }
                 }
@@ -427,10 +449,16 @@ function organizePlayersByPosition(players) {
         }
     });
     
-    // Sort bench by projected points (not by value)
-    organized.bench = availablePlayers.sort((a, b) => 
-        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
-    );
+    // Sort bench by the same method used for starters
+    organized.bench = availablePlayers.sort((a, b) => {
+        const scoreA = appState.optimalMethod === 'value' 
+            ? a.value 
+            : getPlayerProjectedPoints(a, appState.projectionMode);
+        const scoreB = appState.optimalMethod === 'value' 
+            ? b.value 
+            : getPlayerProjectedPoints(b, appState.projectionMode);
+        return scoreB - scoreA;
+    });
     
     return organized;
 }
@@ -1186,6 +1214,9 @@ function setupTradeSortingControls() {
     
     // Setup trade value display controls
     setupTradeValueDisplayControls();
+    
+    // Setup trade optimal method controls
+    setupTradeOptimalMethodControls();
 }
 
 function sortTradeTeams(sortBy) {
@@ -1350,6 +1381,57 @@ function setupTradeValueDisplayControls() {
     });
 }
 
+function setupTradeOptimalMethodControls() {
+    const trigger = document.getElementById('tradeOptimalMethodTrigger');
+    const options = document.getElementById('tradeOptimalMethodOptions');
+    const label = document.getElementById('tradeOptimalMethodLabel');
+    const select = trigger?.closest('.custom-select');
+    
+    if (!trigger || !options || !label || !select) {
+        console.warn('Trade optimal method controls not found');
+        return;
+    }
+    
+    // Toggle dropdown
+    trigger.addEventListener('click', () => {
+        // Close other dropdowns first
+        document.querySelectorAll('.custom-select').forEach(selectEl => {
+            if (selectEl !== select) {
+                selectEl.classList.remove('active');
+            }
+        });
+        
+        // Toggle this dropdown
+        select.classList.toggle('active');
+    });
+    
+    // Handle option selection
+    options.querySelectorAll('.select-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const value = option.dataset.value;
+            const text = option.textContent;
+            
+            // Update label and close dropdown
+            label.textContent = text;
+            select.classList.remove('active');
+            
+            // Update optimal method and re-render
+            tradeState.optimalMethod = value;
+            tradeState.teams.forEach(team => {
+                renderTeamRoster(team.rosterId, team.listElId);
+                renderReceivingList(team.rosterId, team.receivingElId);
+            });
+        });
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!select.contains(e.target)) {
+            select.classList.remove('active');
+        }
+    });
+}
+
 function updateTradeDisplayOptionLabels() {
     // Update projection mode label
     const projectionModeLabel = document.getElementById('tradeProjectionModeLabel');
@@ -1377,6 +1459,19 @@ function updateTradeDisplayOptionLabels() {
                 break;
             case 'normalized':
                 valueDisplayLabel.textContent = 'Normalized (0-100)';
+                break;
+        }
+    }
+    
+    // Update trade optimal method label
+    const tradeOptimalMethodLabel = document.getElementById('tradeOptimalMethodLabel');
+    if (tradeOptimalMethodLabel) {
+        switch (tradeState.optimalMethod) {
+            case 'points':
+                tradeOptimalMethodLabel.textContent = 'Weekly Points';
+                break;
+            case 'value':
+                tradeOptimalMethodLabel.textContent = 'Player Value';
                 break;
         }
     }
@@ -2358,18 +2453,25 @@ function calculateOptimalLineup(players) {
         FLEX: []
     };
     
-    // Sort players by projected points within each position
+    // Helper function to get the scoring metric based on optimal method
+    const getPlayerScore = (player) => {
+        return tradeState.optimalMethod === 'value' 
+            ? player.value 
+            : getPlayerProjectedPoints(player, appState.projectionMode);
+    };
+    
+    // Sort players by the selected metric within each position
     const qbs = availablePlayers.filter(p => p.position === 'QB').sort((a, b) => 
-        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+        getPlayerScore(b) - getPlayerScore(a)
     );
     const rbs = availablePlayers.filter(p => p.position === 'RB').sort((a, b) => 
-        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+        getPlayerScore(b) - getPlayerScore(a)
     );
     const wrs = availablePlayers.filter(p => p.position === 'WR').sort((a, b) => 
-        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+        getPlayerScore(b) - getPlayerScore(a)
     );
     const tes = availablePlayers.filter(p => p.position === 'TE').sort((a, b) => 
-        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+        getPlayerScore(b) - getPlayerScore(a)
     );
     
     // Fill required positions
@@ -2381,14 +2483,14 @@ function calculateOptimalLineup(players) {
     if (wrs.length > 2) lineup.WR.push(wrs[2]);
     if (tes.length > 0) lineup.TE.push(tes[0]);
     
-    // Fill flex positions with best remaining players by projected points
+    // Fill flex positions with best remaining players by the selected metric
     const remainingPlayers = [
         ...qbs.slice(1),
         ...rbs.slice(2),
         ...wrs.slice(3),
         ...tes.slice(1)
     ].sort((a, b) => 
-        getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
+        getPlayerScore(b) - getPlayerScore(a)
     );
     
     // SFLEX (can be QB)
@@ -3128,6 +3230,7 @@ function setupEventListeners() {
 
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
     document.getElementById('horizontalViewBtn').addEventListener('click', toggleHorizontalView);
+    document.getElementById('secondaryControlsToggle').addEventListener('click', toggleSecondaryControls);
     document.addEventListener('keydown', handleKeyboardShortcuts);
     document.getElementById('rostersGrid')?.addEventListener('scroll', updateScrollPositionIndicator, { passive: true });
     document.getElementById('showRosterAnalyzerBtn').addEventListener('click', () => switchView('analyzer'));
@@ -3137,6 +3240,7 @@ function setupEventListeners() {
     // Setup projection mode and value display dropdowns
     setupProjectionModeDropdown();
     setupValueDisplayDropdown();
+    setupOptimalMethodDropdown();
 }
 
 function setupProjectionModeDropdown() {
@@ -3206,6 +3310,39 @@ function setupValueDisplayDropdown() {
     updateDisplayOptionLabels();
 }
 
+function setupOptimalMethodDropdown() {
+    const optimalMethodSelect = document.getElementById('optimalMethodSelect');
+    
+    if (optimalMethodSelect) {
+        const trigger = optimalMethodSelect.querySelector('.select-trigger');
+        const options = optimalMethodSelect.querySelector('.select-options');
+        
+        if (trigger && options) {
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optimalMethodSelect.classList.toggle('active');
+            });
+            
+            options.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const value = option.dataset.value;
+                    handleOptimalMethodChange(value);
+                    optimalMethodSelect.classList.remove('active');
+                    updateDisplayOptionLabels();
+                });
+            });
+        }
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!optimalMethodSelect?.contains(event.target)) {
+            optimalMethodSelect?.classList.remove('active');
+        }
+    });
+}
+
 function setupCustomDropdowns() {
     console.log('Setting up custom dropdowns...');
     // Setup all custom select dropdowns
@@ -3227,7 +3364,7 @@ function setupCustomDropdowns() {
         if (!trigger || !options) return;
         
         // Skip team selector and display options dropdowns as they're handled separately
-        if (select.id === 'teamSelect' || select.id === 'projectionModeSelect' || select.id === 'valueDisplaySelect') {
+        if (select.id === 'teamSelect' || select.id === 'projectionModeSelect' || select.id === 'valueDisplaySelect' || select.id === 'optimalMethodSelect' || select.id === 'tradeOptimalMethodSelect') {
             console.log('Skipping dropdown:', select.id);
             return;
         }
@@ -3405,6 +3542,15 @@ function handleProjectionModeChange(value) {
     updateTradeDisplayOptionLabels();
 }
 
+function handleOptimalMethodChange(value) {
+    appState.optimalMethod = value;
+    // Reprocess roster data to recalculate optimal rosters with new method
+    allData.processedRosters = processRosterData();
+    applyFiltersAndRender();
+    // Update display option labels
+    updateDisplayOptionLabels();
+}
+
 function updateDisplayOptionLabels() {
     // Update projection mode label
     const projectionModeLabel = document.getElementById('projectionModeLabel');
@@ -3432,6 +3578,19 @@ function updateDisplayOptionLabels() {
                 break;
             case 'normalized':
                 valueDisplayLabel.textContent = 'Normalized (0-100)';
+                break;
+        }
+    }
+    
+    // Update optimal method label
+    const optimalMethodLabel = document.getElementById('optimalMethodLabel');
+    if (optimalMethodLabel) {
+        switch (appState.optimalMethod) {
+            case 'points':
+                optimalMethodLabel.textContent = 'Weekly Points';
+                break;
+            case 'value':
+                optimalMethodLabel.textContent = 'Player Value';
                 break;
         }
     }

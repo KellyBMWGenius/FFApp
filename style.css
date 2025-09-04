@@ -130,6 +130,8 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     min-height: 100vh;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+    overflow-y: auto; /* Allow vertical scroll */
 }
 
 .container {
@@ -284,6 +286,16 @@ body {
     border-left: 4px solid #dc2626;
 }
 
+/* Controls wrapper for two-row layout */
+.controls-wrapper {
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 5; /* Ensure wrapper doesn't interfere with dropdowns */
+}
+
 /* Controls header - compact horizontal design */
 .controls-header {
     display: flex;
@@ -294,11 +306,71 @@ body {
     border-radius: 10px;
     border: 1px solid var(--border-primary);
     box-shadow: var(--shadow);
-    margin-bottom: 2rem;
     position: relative;
     z-index: 10000;
     /* Ensure focus outlines are not clipped */
     overflow: visible;
+}
+
+/* Primary controls - main row with most important controls */
+.controls-header.primary-controls {
+    position: relative;
+    z-index: 10005; /* Higher z-index than secondary controls */
+}
+
+/* Ensure all primary controls dropdowns have higher z-index */
+.controls-header.primary-controls .custom-select {
+    position: relative;
+    z-index: 10006; /* Higher than secondary controls */
+}
+
+.controls-header.primary-controls .custom-select.active .select-options {
+    z-index: 10007; /* Even higher for the dropdown options */
+}
+
+/* Secondary controls - less frequently used controls */
+.controls-header.secondary-controls {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-secondary);
+    padding: 10px 16px;
+    gap: 12px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+    margin: 0;
+    position: relative;
+    z-index: 1; /* Lower z-index than primary controls */
+    /* Ensure secondary controls don't interfere with dropdowns */
+    pointer-events: none;
+}
+
+/* Ensure dropdowns in secondary controls have higher z-index */
+.controls-header.secondary-controls .custom-select {
+    position: relative;
+    z-index: 10003; /* Higher than secondary controls header */
+}
+
+.controls-header.secondary-controls .custom-select.active .select-options {
+    z-index: 10004; /* Even higher for the dropdown options */
+    position: absolute !important; /* Ensure absolute positioning */
+    top: 100% !important; /* Position below the trigger */
+    left: 0 !important; /* Align with left edge */
+    right: auto !important; /* Don't stretch to right edge */
+    min-width: 200px !important; /* Ensure adequate width */
+    max-height: 300px !important; /* Limit height to prevent viewport issues */
+    overflow-y: auto !important; /* Allow scrolling if needed */
+}
+
+/* Show secondary controls when expanded */
+.controls-header.secondary-controls.expanded {
+    max-height: 100px;
+    opacity: 1;
+    padding: 10px 16px;
+    margin: 0;
+    z-index: 10000; /* High enough to allow dropdowns to appear above other content */
+    pointer-events: auto; /* Re-enable interactions when expanded */
+    overflow: visible; /* Ensure dropdowns are not clipped */
 }
 
 /* Ensure all direct children have consistent height */
@@ -547,7 +619,7 @@ body {
 .controls-header .control-item:first-child .custom-select {
     min-width: 200px;
     position: relative;
-    z-index: 10001;
+    z-index: 10006; /* Higher than secondary controls */
     overflow: visible;
 }
 
@@ -605,7 +677,7 @@ body {
 /* Ensure the dropdown is positioned correctly relative to the viewport */
 .controls-header .control-item:first-child .custom-select.active {
     position: relative;
-    z-index: 99999;
+    z-index: 10007;
 }
 
 /* Ensure the dropdown is not clipped by any parent container */
@@ -614,7 +686,7 @@ body {
     top: 100%;
     left: 0;
     right: auto;
-    z-index: 99999 !important;
+    z-index: 10007 !important; /* Higher than secondary controls */
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-top: none;
@@ -1101,6 +1173,46 @@ body {
 .horizontal-view-btn i { font-size: 1rem; color: var(--accent-primary); transition: color 0.3s ease; }
 .horizontal-view-btn.active i { color: white; }
 
+/* Secondary controls toggle button */
+.secondary-controls-toggle {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    padding: 0 12px;
+    height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+    min-width: 40px;
+}
+
+.secondary-controls-toggle:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+    transform: translateY(-1px);
+}
+
+.secondary-controls-toggle.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.secondary-controls-toggle i { 
+    font-size: 1rem; 
+    color: var(--accent-primary); 
+    transition: color 0.3s ease, transform 0.3s ease; 
+}
+
+.secondary-controls-toggle.active i { 
+    color: white; 
+    transform: rotate(180deg);
+}
+
 /* Horizontal view styles */
 .rosters-container.horizontal-view .rosters-grid {
     display: flex;
@@ -1211,6 +1323,11 @@ body {
     }
 }
 @media (max-width: 768px) {
+    /* Controls wrapper responsive layout */
+    .controls-wrapper {
+        gap: 0.5rem;
+    }
+    
     /* Controls header responsive layout */
     .controls-header {
         flex-direction: column;
@@ -1245,6 +1362,12 @@ body {
     .horizontal-view-btn {
         align-self: center;
         margin-top: 8px;
+    }
+    
+    /* Secondary controls on mobile - make them more compact */
+    .controls-header.secondary-controls {
+        padding: 12px 16px;
+        gap: 8px;
     }
     
     .trade-interface {
@@ -1334,6 +1457,12 @@ body {
     .toggle-buttons button {
         font-size: 12px;
         padding: 6px 8px;
+    }
+    
+    /* Secondary controls on extra small screens */
+    .controls-header.secondary-controls {
+        padding: 10px 12px;
+        gap: 6px;
     }
 }
 
@@ -3329,5 +3458,11 @@ body {
     .toggle-buttons button {
         font-size: 12px;
         padding: 6px 8px;
+    }
+    
+    /* Secondary controls on extra small screens */
+    .controls-header.secondary-controls {
+        padding: 10px 12px;
+        gap: 6px;
     }
 }
