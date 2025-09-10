@@ -44,7 +44,7 @@ def parse_player_projections(player_stats, current_week):
     """
     Parse the raw player stats to extract the relevant projection data.
     Based on the sample_return.txt structure, we need to extract:
-    - Week-specific projected points (from week 1)
+    - Week-specific projected points (from current week)
     - Season projected average points (from week 0)
     """
     if not player_stats:
@@ -56,6 +56,13 @@ def parse_player_projections(player_stats, current_week):
         week_data = player_stats[current_week]
         if 'projected_points' in week_data:
             current_week_projection = week_data['projected_points']
+    
+    # If current week not available, try week 1 as fallback
+    if current_week_projection is None and current_week != 1:
+        if 1 in player_stats:
+            week_data = player_stats[1]
+            if 'projected_points' in week_data:
+                current_week_projection = week_data['projected_points']
     
     # Get season projection (from week 0) - use integer key
     season_projection = None
