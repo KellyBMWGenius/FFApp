@@ -10,12 +10,35 @@ YEAR = 2025
 def get_current_nfl_week():
     """
     Dynamically determine the current NFL week.
-    For now, we'll use week 1 as default since it's preseason.
-    In a real implementation, you'd want to check the actual NFL schedule.
+    NFL weeks start on Tuesday, so we calculate based on that.
     """
-    # TODO: Implement logic to determine actual current NFL week
-    # For now, return week 1 as default
-    return 1
+    from datetime import datetime, timedelta
+    
+    # Get current date
+    now = datetime.now()
+    
+    # NFL season typically starts in early September
+    # For 2025 season, let's assume it starts September 2nd (first Tuesday of September)
+    # You may need to adjust this date based on the actual NFL schedule
+    season_start = datetime(2025, 9, 2)  # September 2, 2025 (first Tuesday)
+    
+    # Calculate days since season start
+    days_since_start = (now - season_start).days
+    
+    # If we're before the season start, return week 1
+    if days_since_start < 0:
+        return 1
+    
+    # Calculate current week (each week is 7 days, starting on Tuesday)
+    # Week 1: Sept 2-8, Week 2: Sept 9-15, etc.
+    current_week = (days_since_start // 7) + 1
+    
+    # NFL regular season is typically 18 weeks
+    # If we're past week 18, we're in playoffs or off-season
+    if current_week > 18:
+        return 18  # Return last regular season week
+    
+    return current_week
 
 def parse_player_projections(player_stats, current_week):
     """
