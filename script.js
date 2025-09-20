@@ -61,7 +61,9 @@ let tradeState = {
     teams: [], // Will store { rosterId, columnEl, listElId, selectElId }
     tradeParts: {}, // e.g., { 'rosterId1': { sending: Map(), receiving: Map() } }
     viewMode: 'optimal', // Add view mode state for trade calculator
-    optimalMethod: 'points' // 'points' or 'value' for optimal roster calculation
+    optimalMethod: 'points', // 'points' or 'value' for optimal roster calculation
+    projectionMode: 'average', // Independent projection mode for trade calculator
+    valueNormalization: 'raw' // Independent value display for trade calculator
 };
 
 // Debug tracking
@@ -1028,6 +1030,11 @@ function switchView(view) {
     const tradeBtn = document.getElementById('showTradeCalculatorBtn');
     const freeAgentsBtn = document.getElementById('showFreeAgentsBtn');
 
+    // Clear all dropdown setup flags to allow re-initialization
+    document.querySelectorAll('.custom-select .select-trigger[data-dropdown-setup]').forEach(trigger => {
+        trigger.removeAttribute('data-dropdown-setup');
+    });
+
     // Hide all containers first
     rosterAnalyzer.style.display = 'none';
     tradeCalculator.style.display = 'none';
@@ -1043,6 +1050,24 @@ function switchView(view) {
         tradeCalculator.style.display = 'flex';
         tradeSummary.style.display = 'block';
         tradeBtn.classList.add('active');
+        
+        // Auto-expand secondary controls so Projection Mode and Value Display dropdowns are accessible
+        const secondaryControls = document.querySelector('.controls-header.secondary-controls');
+        const toggleBtn = document.getElementById('secondaryControlsToggle');
+        if (secondaryControls && !secondaryControls.classList.contains('expanded')) {
+            secondaryControls.classList.add('expanded');
+            toggleBtn.classList.add('active');
+            toggleBtn.title = 'Hide advanced settings';
+        }
+        
+        // Set up dropdown event listeners for all controls with small delay
+        setTimeout(() => {
+            setupCustomDropdowns();
+            setupProjectionModeDropdown();
+            setupValueDisplayDropdown();
+            setupOptimalMethodDropdown();
+        }, 50);
+        
         if (tradeState.teams.length === 0 && allData.processedRosters.length > 0) {
             initTradeCalculator();
         } else if (tradeState.teams.length > 0) {
@@ -1052,10 +1077,23 @@ function switchView(view) {
             if (Object.keys(tradeState.tradeParts).length > 0) {
                 calculateAndDisplayTrade();
             }
+            // Ensure dropdown event listeners are set up
+            setTimeout(() => {
+                setupTradeControls();
+            }, 10);
         }
     } else if (view === 'free-agents') {
         freeAgents.style.display = 'block';
         freeAgentsBtn.classList.add('active');
+        
+        // Re-setup dropdown event listeners for free agents
+        setTimeout(() => {
+            setupCustomDropdowns();
+            setupProjectionModeDropdown();
+            setupValueDisplayDropdown();
+            setupOptimalMethodDropdown();
+        }, 50);
+        
         if (allData.processedRosters && allData.processedRosters.length > 0) {
             initFreeAgents();
         } else {
@@ -1069,6 +1107,14 @@ function switchView(view) {
     } else { // 'analyzer'
         rosterAnalyzer.style.display = 'block';
         rosterBtn.classList.add('active');
+        
+        // Re-setup dropdown event listeners for roster analyzer
+        setTimeout(() => {
+            setupCustomDropdowns();
+            setupProjectionModeDropdown();
+            setupValueDisplayDropdown();
+            setupOptimalMethodDropdown();
+        }, 50);
     }
 }
 
@@ -1080,59 +1126,11 @@ function initTradeCalculator() {
     tradeInterface.innerHTML = '';
     tradeState = { teams: [], tradeParts: {}, viewMode: 'value' }; // Set default view mode to 'value'
 
-    // Add sorting controls header
-    const sortingHeader = document.createElement('div');
-    sortingHeader.className = 'trade-sorting-header';
-    sortingHeader.innerHTML = `
-        <div class="sorting-controls">
-            <label for="tradeTeamSortBy">Sort Teams:</label>
-            <div class="custom-select">
-                <div class="select-trigger" id="tradeTeamSortByTrigger">
-                    <span id="tradeTeamSortByLabel">High to Low Value</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="select-options" id="tradeTeamSortByOptions">
-                    <div class="select-option" data-value="value">High to Low Value</div>
-                    <div class="select-option" data-value="optimal">Starter Positions + Bench</div>
-                    <div class="select-option" data-value="positional">Positional Overview</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="trade-display-options">
-            <div class="control-item">
-                <label for="tradeProjectionMode">Projection Mode:</label>
-                <div class="custom-select" id="tradeProjectionModeSelect">
-                    <div class="select-trigger" id="tradeProjectionModeTrigger">
-                        <span id="tradeProjectionModeLabel">Average</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="select-options" id="tradeProjectionModeOptions">
-                        <div class="select-option" data-value="week">Week Projection</div>
-                        <div class="select-option" data-value="average">Average</div>
-                        <div class="select-option" data-value="season">Season Total</div>
-                    </div>
-                </div>
-            </div>
-            <div class="control-item">
-                <label for="tradeValueDisplay">Value Display:</label>
-                <div class="custom-select" id="tradeValueDisplaySelect">
-                    <div class="select-trigger" id="tradeValueDisplayTrigger">
-                        <span id="tradeValueDisplayLabel">Raw Values</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="select-options" id="tradeValueDisplayOptions">
-                        <div class="select-option" data-value="raw">Raw Values</div>
-                        <div class="select-option" data-value="normalized">Normalized (0-100)</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    tradeInterface.appendChild(sortingHeader);
 
-    // Add event listeners for sorting
-    setupTradeSortingControls();
+    // Add event listeners for trade controls with a small delay to ensure DOM is ready
+    setTimeout(() => {
+        setupTradeControls();
+    }, 10);
     
     // Update trade calculator display option labels to match current app state
     updateTradeDisplayOptionLabels();
@@ -1168,11 +1166,46 @@ function initTradeCalculator() {
     updateTradeInterfaceLayout();
 }
 
-function setupTradeSortingControls() {
+function setupTradeControls() {
+    console.log('Setting up trade controls...');
+    
+    // Setup Trade View dropdown
+    setupTradeViewControls();
+    
+    // Setup Trade Optimal Method dropdown
+    setupTradeOptimalMethodControls();
+    
+    // Setup trade-specific projection mode controls
+    setupTradeProjectionModeControls();
+    
+    // Setup trade-specific value display controls
+    setupTradeValueDisplayControls();
+}
+
+function setupTradeViewControls() {
     const trigger = document.getElementById('tradeTeamSortByTrigger');
     const options = document.getElementById('tradeTeamSortByOptions');
     const label = document.getElementById('tradeTeamSortByLabel');
-    const select = trigger.closest('.custom-select');
+    const select = trigger?.closest('.custom-select');
+    
+    if (!trigger || !options || !label || !select) {
+        console.warn('Trade view controls not found:', {
+            trigger: !!trigger,
+            options: !!options, 
+            label: !!label,
+            select: !!select
+        });
+        return;
+    }
+    
+    console.log('Setting up trade view controls');
+    
+    // Check if already set up to prevent duplicate listeners
+    if (trigger.hasAttribute('data-trade-setup')) {
+        console.log('Trade view controls already set up');
+        return;
+    }
+    trigger.setAttribute('data-trade-setup', 'true');
     
     // Toggle dropdown
     trigger.addEventListener('click', () => {
@@ -1197,8 +1230,8 @@ function setupTradeSortingControls() {
             label.textContent = text;
             select.classList.remove('active');
             
-            // Sort teams based on selection
-            sortTradeTeams(value);
+            // Update trade view based on selection
+            updateTradeView(value);
         });
     });
     
@@ -1208,18 +1241,9 @@ function setupTradeSortingControls() {
             select.classList.remove('active');
         }
     });
-    
-    // Setup trade projection mode controls
-    setupTradeProjectionModeControls();
-    
-    // Setup trade value display controls
-    setupTradeValueDisplayControls();
-    
-    // Setup trade optimal method controls
-    setupTradeOptimalMethodControls();
 }
 
-function sortTradeTeams(sortBy) {
+function updateTradeView(sortBy) {
     console.log('Trade Calculator: Changing view mode to:', sortBy);
     
     // Update the view mode based on selection
@@ -1293,7 +1317,26 @@ function setupTradeProjectionModeControls() {
     const trigger = document.getElementById('tradeProjectionModeTrigger');
     const options = document.getElementById('tradeProjectionModeOptions');
     const label = document.getElementById('tradeProjectionModeLabel');
-    const select = trigger.closest('.custom-select');
+    const select = trigger?.closest('.custom-select');
+    
+    if (!trigger || !options || !label || !select) {
+        console.warn('Trade projection mode controls not found:', {
+            trigger: !!trigger,
+            options: !!options, 
+            label: !!label,
+            select: !!select
+        });
+        return;
+    }
+    
+    console.log('Setting up trade projection mode controls');
+    
+    // Check if already set up to prevent duplicate listeners
+    if (trigger.hasAttribute('data-trade-setup')) {
+        console.log('Trade projection mode controls already set up');
+        return;
+    }
+    trigger.setAttribute('data-trade-setup', 'true');
     
     // Toggle dropdown
     trigger.addEventListener('click', () => {
@@ -1318,8 +1361,8 @@ function setupTradeProjectionModeControls() {
             label.textContent = text;
             select.classList.remove('active');
             
-            // Update projection mode and re-render
-            appState.projectionMode = value;
+            // Update trade-specific projection mode and re-render
+            tradeState.projectionMode = value;
             tradeState.teams.forEach(team => {
                 renderTeamRoster(team.rosterId, team.listElId);
                 renderReceivingList(team.rosterId, team.receivingElId);
@@ -1339,7 +1382,26 @@ function setupTradeValueDisplayControls() {
     const trigger = document.getElementById('tradeValueDisplayTrigger');
     const options = document.getElementById('tradeValueDisplayOptions');
     const label = document.getElementById('tradeValueDisplayLabel');
-    const select = trigger.closest('.custom-select');
+    const select = trigger?.closest('.custom-select');
+    
+    if (!trigger || !options || !label || !select) {
+        console.warn('Trade value display controls not found:', {
+            trigger: !!trigger,
+            options: !!options, 
+            label: !!label,
+            select: !!select
+        });
+        return;
+    }
+    
+    console.log('Setting up trade value display controls');
+    
+    // Check if already set up to prevent duplicate listeners
+    if (trigger.hasAttribute('data-trade-setup')) {
+        console.log('Trade value display controls already set up');
+        return;
+    }
+    trigger.setAttribute('data-trade-setup', 'true');
     
     // Toggle dropdown
     trigger.addEventListener('click', () => {
@@ -1364,8 +1426,8 @@ function setupTradeValueDisplayControls() {
             label.textContent = text;
             select.classList.remove('active');
             
-            // Update value display mode and re-render
-            appState.valueNormalization = value;
+            // Update trade-specific value display mode and re-render
+            tradeState.valueNormalization = value;
             tradeState.teams.forEach(team => {
                 renderTeamRoster(team.rosterId, team.listElId);
                 renderReceivingList(team.rosterId, team.receivingElId);
@@ -1432,11 +1494,12 @@ function setupTradeOptimalMethodControls() {
     });
 }
 
+
 function updateTradeDisplayOptionLabels() {
     // Update projection mode label
     const projectionModeLabel = document.getElementById('tradeProjectionModeLabel');
     if (projectionModeLabel) {
-        switch (appState.projectionMode) {
+        switch (tradeState.projectionMode) {
             case 'week':
                 const weekNumber = window.currentWeekNumber || 1;
                 projectionModeLabel.textContent = `Week ${weekNumber} Projection`;
@@ -1453,7 +1516,7 @@ function updateTradeDisplayOptionLabels() {
     // Update value display label
     const valueDisplayLabel = document.getElementById('tradeValueDisplayLabel');
     if (valueDisplayLabel) {
-        switch (appState.valueNormalization) {
+        switch (tradeState.valueNormalization) {
             case 'raw':
                 valueDisplayLabel.textContent = 'Raw Values';
                 break;
@@ -1827,15 +1890,15 @@ function createReceivingPlayerCard(player, rosterId) {
     let projectionValue = 0;
     let projectionText = 'N/A';
     if (projection) {
-        if (appState.projectionMode === 'week') projectionValue = projection.weekProjection;
-        else if (appState.projectionMode === 'average') projectionValue = projection.seasonProjection;
+        if (tradeState.projectionMode === 'week') projectionValue = projection.weekProjection;
+        else if (tradeState.projectionMode === 'average') projectionValue = projection.seasonProjection;
         else projectionValue = projection.seasonProjection * 17;
         projectionText = projectionValue.toFixed(1);
     }
     
     // Apply value normalization logic
     let displayValue = player.value;
-    if (appState.valueNormalization === 'normalized' && player.rawValue !== undefined) {
+    if (tradeState.valueNormalization === 'normalized' && player.rawValue !== undefined) {
         displayValue = normalizeValue(player.rawValue, getMaxPlayerValue(allData.playerValues));
     }
     
@@ -1846,8 +1909,8 @@ function createReceivingPlayerCard(player, rosterId) {
             <div class="player-details">${player.team}</div>
         </div>
         <div class="position-badge" data-position="${player.position}">${player.position}</div>
-        <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
-        <div class="player-value ${getValueClass(displayValue, player.position, appState.valueNormalization === 'normalized')}">${formatValue(displayValue, appState.valueNormalization === 'normalized')}</div>
+        <div class="player-projection ${getProjectionClass(projectionValue, player.position, tradeState.projectionMode)}">${projectionText}</div>
+        <div class="player-value ${getValueClass(displayValue, player.position, tradeState.valueNormalization === 'normalized')}">${formatValue(displayValue, tradeState.valueNormalization === 'normalized')}</div>
         <button class="remove-player-btn" onclick="removePlayerFromTrade('${player.id}', '${rosterId}', 'receiving')" title="Remove from trade">
             <i class="fas fa-times"></i>
         </button>
@@ -1961,18 +2024,18 @@ function createTradePlayerRow(player, rosterId) {
     let projectionValue = 0;
     let projectionText = 'N/A';
     if (projection) {
-        if (appState.projectionMode === 'week') projectionValue = projection.weekProjection;
-        else if (appState.projectionMode === 'average') projectionValue = projection.seasonProjection;
+        if (tradeState.projectionMode === 'week') projectionValue = projection.weekProjection;
+        else if (tradeState.projectionMode === 'average') projectionValue = projection.seasonProjection;
         else projectionValue = projection.seasonProjection * 17;
         projectionText = projectionValue.toFixed(1);
     }
     
-    // Apply value normalization logic based on appState.valueNormalization
+    // Apply value normalization logic based on tradeState.valueNormalization
     let displayValue = player.value;
-    if (appState.valueNormalization === 'normalized' && player.rawValue !== undefined) {
+    if (tradeState.valueNormalization === 'normalized' && player.rawValue !== undefined) {
         // If normalization is requested and rawValue is available, normalize it
         displayValue = normalizeValue(player.rawValue, getMaxPlayerValue(allData.playerValues));
-    } else if (appState.valueNormalization === 'normalized') {
+    } else if (tradeState.valueNormalization === 'normalized') {
         // If normalization is requested but no rawValue, use the current value (assuming it's already normalized)
         displayValue = player.value;
     }
@@ -1991,8 +2054,8 @@ function createTradePlayerRow(player, rosterId) {
             <div class="player-name">${player.name} <span class="player-team">${player.team || 'FA'}</span></div>
         </div>
         <div class="position-badge" data-position="${player.position}">${player.position}</div>
-        <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
-        <div class="player-value ${getValueClass(displayValue, player.position, appState.valueNormalization === 'normalized')}">${formatValue(displayValue, appState.valueNormalization === 'normalized')}</div>
+        <div class="player-projection ${getProjectionClass(projectionValue, player.position, tradeState.projectionMode)}">${projectionText}</div>
+        <div class="player-value ${getValueClass(displayValue, player.position, tradeState.valueNormalization === 'normalized')}">${formatValue(displayValue, tradeState.valueNormalization === 'normalized')}</div>
     </div>`;
 }
 
@@ -2147,8 +2210,8 @@ function createPlayerCard(player, type, rosterId) {
     let projectionValue = 0;
     let projectionText = 'N/A';
     if (projection) {
-        if (appState.projectionMode === 'week') projectionValue = projection.weekProjection;
-        else if (appState.projectionMode === 'average') projectionValue = projection.seasonProjection;
+        if (tradeState.projectionMode === 'week') projectionValue = projection.weekProjection;
+        else if (tradeState.projectionMode === 'average') projectionValue = projection.seasonProjection;
         else projectionValue = projection.seasonProjection * 17;
         projectionText = projectionValue.toFixed(1);
     }
@@ -2160,8 +2223,8 @@ function createPlayerCard(player, type, rosterId) {
             <div class="player-details">${player.team}</div>
         </div>
         <div class="position-badge" data-position="${player.position}">${player.position}</div>
-        <div class="player-projection ${getProjectionClass(projectionValue, player.position, appState.projectionMode)}">${projectionText}</div>
-        <div class="player-value ${getValueClass(player.value, player.position, appState.valueNormalization === 'normalized')}">${formatValue(player.value, appState.valueNormalization === 'normalized')}</div>
+        <div class="player-projection ${getProjectionClass(projectionValue, player.position, tradeState.projectionMode)}">${projectionText}</div>
+        <div class="player-value ${getValueClass(player.value, player.position, tradeState.valueNormalization === 'normalized')}">${formatValue(player.value, tradeState.valueNormalization === 'normalized')}</div>
         <button class="remove-player-btn" onclick="removePlayerFromTrade('${player.id}', '${rosterId}', '${type}')" title="Remove from trade">
             <i class="fas fa-times"></i>
         </button>
@@ -2238,7 +2301,7 @@ function calculateAndDisplayTrade() {
         
         // Format the net value according to normalization setting
         let displayNetValue = data.netValue;
-        if (appState.valueNormalization === 'normalized') {
+        if (tradeState.valueNormalization === 'normalized') {
             displayNetValue = normalizeValue(data.netValue, getMaxPlayerValue(allData.playerValues));
         }
         
@@ -2247,7 +2310,7 @@ function calculateAndDisplayTrade() {
         summaryEl.innerHTML = `
             <div class="summary-team-name">${teamInfo.teamName}</div>
             <div class="summary-net-value" style="color: ${valueColor};">
-                ${data.netValue >= 0 ? '+' : ''}${appState.valueNormalization === 'normalized' ? 
+                ${data.netValue >= 0 ? '+' : ''}${tradeState.valueNormalization === 'normalized' ? 
                     Math.round(displayNetValue) : 
                     Math.round(data.netValue).toLocaleString()}
             </div>
@@ -2358,7 +2421,7 @@ function updateInlineTeamSummaries(teamsSummaryData) {
         
         // Format the net value according to normalization setting
         let displayNetValue = data.netValue;
-        if (appState.valueNormalization === 'normalized') {
+        if (tradeState.valueNormalization === 'normalized') {
             displayNetValue = normalizeValue(data.netValue, getMaxPlayerValue(allData.playerValues));
         }
         
@@ -2369,7 +2432,7 @@ function updateInlineTeamSummaries(teamsSummaryData) {
         if (teamNameEl) teamNameEl.textContent = teamInfo.teamName;
         if (netValueEl) {
             netValueEl.className = `net-value ${valueClass}`;
-            netValueEl.textContent = `${data.netValue >= 0 ? '+' : ''}${appState.valueNormalization === 'normalized' ? 
+            netValueEl.textContent = `${data.netValue >= 0 ? '+' : ''}${tradeState.valueNormalization === 'normalized' ? 
                 Math.round(displayNetValue) : 
                 Math.round(data.netValue).toLocaleString()}`;
         }
@@ -2520,7 +2583,7 @@ function calculateLineupStats(lineup) {
         players.forEach(player => {
             // Use raw value for calculations if normalization is selected, otherwise use the already-normalized value
             let valueToUse = player.value;
-            if (appState.valueNormalization === 'normalized') {
+            if (tradeState.valueNormalization === 'normalized') {
                 // If normalized is selected, we need to use the raw value for calculations
                 // since the normalized value is just for display
                 valueToUse = player.rawValue;
@@ -2533,9 +2596,9 @@ function calculateLineupStats(lineup) {
             const espnId = allData.espnIdMap[player.id];
             const projection = espnId ? allData.projectionData[espnId] : null;
             if (projection) {
-                if (appState.projectionMode === 'week') {
+                if (tradeState.projectionMode === 'week') {
                     weeklyPoints += projection.weekProjection || 0;
-                } else if (appState.projectionMode === 'average') {
+                } else if (tradeState.projectionMode === 'average') {
                     weeklyPoints += projection.seasonProjection || 0;
                 } else {
                     weeklyPoints += (projection.seasonProjection || 0) * 17;
@@ -2614,7 +2677,7 @@ function createTeamLineupComparisonCard(result) {
                 <div class="summary-item ${starterValueClass}">
                     <span class="summary-label">Starter Value:</span>
                     <span class="summary-value">
-                        ${starterValueChange > 0 ? '+' : ''}${appState.valueNormalization === 'normalized' ? 
+                        ${starterValueChange > 0 ? '+' : ''}${tradeState.valueNormalization === 'normalized' ? 
                             Math.round(normalizeValue(starterValueChange, getMaxPlayerValue(allData.playerValues))) : 
                             Math.round(starterValueChange).toLocaleString()}
                     </span>
@@ -2634,7 +2697,7 @@ function createTeamLineupComparisonCard(result) {
                 <div class="lineup-stats">
                     <div class="stat-item">
                         <span class="stat-label">Starter Value:</span>
-                        <span class="stat-value">${appState.valueNormalization === 'normalized' ? 
+                        <span class="stat-value">${tradeState.valueNormalization === 'normalized' ? 
                             Math.round(normalizeValue(result.preTrade.stats.starterValue, getMaxPlayerValue(allData.playerValues))) : 
                             Math.round(result.preTrade.stats.starterValue).toLocaleString()}</span>
                     </div>
@@ -2653,7 +2716,7 @@ function createTeamLineupComparisonCard(result) {
                 <div class="lineup-stats">
                     <div class="stat-item">
                         <span class="stat-label">Starter Value:</span>
-                        <span class="stat-value">${appState.valueNormalization === 'normalized' ? 
+                        <span class="stat-value">${tradeState.valueNormalization === 'normalized' ? 
                             Math.round(normalizeValue(result.postTrade.stats.starterValue, getMaxPlayerValue(allData.playerValues))) : 
                             Math.round(result.postTrade.stats.starterValue).toLocaleString()}</span>
                     </div>
@@ -2686,9 +2749,9 @@ function renderLineupPlayers(lineup, prefix, tradeInfo, positionChanges) {
                 const projection = espnId ? allData.projectionData[espnId] : null;
                 let projectionText = 'N/A';
                 if (projection) {
-                    if (appState.projectionMode === 'week') {
+                    if (tradeState.projectionMode === 'week') {
                         projectionText = projection.weekProjection?.toFixed(1) || 'N/A';
-                    } else if (appState.projectionMode === 'average') {
+                    } else if (tradeState.projectionMode === 'average') {
                         projectionText = projection.seasonProjection?.toFixed(1) || 'N/A';
                     } else {
                         projectionText = ((projection.seasonProjection || 0) * 17).toFixed(1);
@@ -2697,7 +2760,7 @@ function renderLineupPlayers(lineup, prefix, tradeInfo, positionChanges) {
                 
                 // Get the correct value to display (same as roster lists above)
                 let displayValue = player.value;
-                if (appState.valueNormalization === 'normalized' && player.rawValue !== undefined) {
+                if (tradeState.valueNormalization === 'normalized' && player.rawValue !== undefined) {
                     displayValue = normalizeValue(player.rawValue, getMaxPlayerValue(allData.playerValues));
                 }
                 
@@ -2735,7 +2798,7 @@ function renderLineupPlayers(lineup, prefix, tradeInfo, positionChanges) {
                 html += `<div class="${playerClass}">
                     <span class="player-name">${player.name}</span>
                     <span class="player-projection">${projectionText}</span>
-                    <span class="player-value">${formatValue(displayValue, appState.valueNormalization === 'normalized')}</span>
+                    <span class="player-value">${formatValue(displayValue, tradeState.valueNormalization === 'normalized')}</span>
                 </div>`;
             });
             
@@ -3249,6 +3312,11 @@ function setupProjectionModeDropdown() {
         const trigger = projectionModeSelect.querySelector('.select-trigger');
         const options = projectionModeSelect.querySelector('.select-options');
         
+        // Skip if already set up
+        if (trigger && trigger.hasAttribute('data-dropdown-setup')) {
+            return;
+        }
+        
         if (trigger && options) {
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -3264,6 +3332,9 @@ function setupProjectionModeDropdown() {
                     updateDisplayOptionLabels();
                 });
             });
+            
+            // Mark as set up
+            trigger.setAttribute('data-dropdown-setup', 'true');
         }
     }
     
@@ -3281,6 +3352,11 @@ function setupValueDisplayDropdown() {
         const trigger = valueDisplaySelect.querySelector('.select-trigger');
         const options = valueDisplaySelect.querySelector('.select-options');
         
+        // Skip if already set up
+        if (trigger && trigger.hasAttribute('data-dropdown-setup')) {
+            return;
+        }
+        
         if (trigger && options) {
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -3296,6 +3372,9 @@ function setupValueDisplayDropdown() {
                     updateDisplayOptionLabels();
                 });
             });
+            
+            // Mark as set up
+            trigger.setAttribute('data-dropdown-setup', 'true');
         }
     }
     
@@ -3317,6 +3396,11 @@ function setupOptimalMethodDropdown() {
         const trigger = optimalMethodSelect.querySelector('.select-trigger');
         const options = optimalMethodSelect.querySelector('.select-options');
         
+        // Skip if already set up
+        if (trigger && trigger.hasAttribute('data-dropdown-setup')) {
+            return;
+        }
+        
         if (trigger && options) {
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -3332,6 +3416,9 @@ function setupOptimalMethodDropdown() {
                     updateDisplayOptionLabels();
                 });
             });
+            
+            // Mark as set up
+            trigger.setAttribute('data-dropdown-setup', 'true');
         }
     }
     
@@ -3349,6 +3436,20 @@ function setupCustomDropdowns() {
     const customSelects = document.querySelectorAll('.custom-select');
     console.log('Found custom selects:', customSelects.length);
     
+    // Log all found dropdowns for debugging
+    Array.from(customSelects).forEach(select => {
+        console.log(`Found dropdown: ${select.id || 'no-id'}, visible: ${select.offsetParent !== null}`);
+    });
+    
+    // Clear any existing dropdown event listeners to prevent duplicates
+    customSelects.forEach(select => {
+        const existingTrigger = select.querySelector('.select-trigger');
+        if (existingTrigger && existingTrigger.hasAttribute('data-dropdown-setup')) {
+            console.log(`Skipping already set up dropdown: ${select.id}`);
+            return; // Skip if already set up
+        }
+    });
+    
     customSelects.forEach((select, index) => {
         const trigger = select.querySelector('.select-trigger');
         const options = select.querySelector('.select-options');
@@ -3364,7 +3465,7 @@ function setupCustomDropdowns() {
         if (!trigger || !options) return;
         
         // Skip team selector and display options dropdowns as they're handled separately
-        if (select.id === 'teamSelect' || select.id === 'projectionModeSelect' || select.id === 'valueDisplaySelect' || select.id === 'optimalMethodSelect' || select.id === 'tradeOptimalMethodSelect') {
+        if (select.id === 'teamSelect' || select.id === 'projectionModeSelect' || select.id === 'valueDisplaySelect' || select.id === 'optimalMethodSelect') {
             console.log('Skipping dropdown:', select.id);
             return;
         }
@@ -3396,6 +3497,9 @@ function setupCustomDropdowns() {
             }
         });
         
+        // Mark this trigger as set up to prevent duplicate listeners
+        trigger.setAttribute('data-dropdown-setup', 'true');
+        
         console.log(`Added click listener to dropdown: ${select.id}`);
         
         // Handle option selection
@@ -3425,6 +3529,29 @@ function setupCustomDropdowns() {
                     appState.teamSort = value;
                     updateTeamSortByLabel();
                     applyFiltersAndRender();
+                } else if (select.id === 'tradeTeamSortBySelect') {
+                    console.log('Trade team sort changed to:', value);
+                    if (typeof sortTradeTeams === 'function') {
+                        sortTradeTeams(value);
+                    } else {
+                        console.warn('sortTradeTeams function not available');
+                    }
+                } else if (select.id === 'tradeOptimalMethodSelect') {
+                    console.log('Trade optimal method changed to:', value);
+                    if (typeof tradeState !== 'undefined') {
+                        tradeState.optimalMethod = value;
+                        // Re-render all team rosters and receiving lists if they exist
+                        if (tradeState.teams && typeof renderTeamRoster === 'function' && typeof renderReceivingList === 'function') {
+                            tradeState.teams.forEach(team => {
+                                renderTeamRoster(team.rosterId, team.listElId);
+                                renderReceivingList(team.rosterId, team.receivingElId);
+                            });
+                        } else {
+                            console.warn('Trade state teams or render functions not available');
+                        }
+                    } else {
+                        console.warn('tradeState not defined');
+                    }
                 }
             });
         });

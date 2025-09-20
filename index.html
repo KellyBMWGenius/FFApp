@@ -183,7 +183,6 @@
                             </div>
                         </header>
                     </div>
-
                     <div class="horizontal-view-help" id="horizontalViewHelp"></div>
                     <div class="rosters-grid" id="rostersGrid"></div>
                 </div>
@@ -215,6 +214,35 @@
                                 <div class="select-options" id="tradeOptimalMethodOptions">
                                     <div class="select-option" data-value="points">Weekly Points</div>
                                     <div class="select-option" data-value="value">Player Value</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="control-item">
+                            <label for="tradeProjectionMode">Projection Mode:</label>
+                            <div class="custom-select" id="tradeProjectionModeSelect">
+                                <div class="select-trigger" id="tradeProjectionModeTrigger">
+                                    <span id="tradeProjectionModeLabel">Average</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="select-options" id="tradeProjectionModeOptions">
+                                    <div class="select-option" data-value="week">Week 1 Projection</div>
+                                    <div class="select-option" data-value="average">Average</div>
+                                    <div class="select-option" data-value="season">Season Total</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="control-item">
+                            <label for="tradeValueDisplay">Value Display:</label>
+                            <div class="custom-select" id="tradeValueDisplaySelect">
+                                <div class="select-trigger" id="tradeValueDisplayTrigger">
+                                    <span id="tradeValueDisplayLabel">Raw Values</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="select-options" id="tradeValueDisplayOptions">
+                                    <div class="select-option" data-value="raw">Raw Values</div>
+                                    <div class="select-option" data-value="normalized">Normalized (0-100)</div>
                                 </div>
                             </div>
                         </div>

@@ -369,7 +369,7 @@ body {
     padding: 10px 16px;
     margin: 0;
     z-index: 10000; /* High enough to allow dropdowns to appear above other content */
-    pointer-events: auto; /* Re-enable interactions when expanded */
+    pointer-events: auto; /* Re-enable pointer events when expanded */
     overflow: visible; /* Ensure dropdowns are not clipped */
 }
 
