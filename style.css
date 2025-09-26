@@ -141,6 +141,26 @@ body {
     overflow: visible;
 }
 
+/* Remove width constraint when in horizontal view */
+.rosters-container.horizontal-view .container {
+    max-width: none;
+    width: 100%;
+    overflow: visible;
+}
+
+/* Remove constraint from main container when horizontal view is active */
+body.horizontal-view-active .main .container {
+    max-width: none;
+    width: 100%;
+}
+
+/* Ensure horizontal view uses full browser width */
+.rosters-container.horizontal-view {
+    width: 100%;
+    max-width: none;
+    overflow: visible;
+}
+
 /* Header */
 .header {
     background: var(--bg-header);
@@ -1226,34 +1246,22 @@ body {
     position: relative;
     box-sizing: border-box;
     scroll-padding: 1rem;
+    /* Ensure scrolling works by allowing content to overflow */
+    min-width: 0;
 }
 
 .rosters-container.horizontal-view .roster-card {
-    flex: 0 0 calc((100% - 3rem) / 3);
-    min-width: calc((100% - 3rem) / 3);
-    max-width: calc((100% - 3rem) / 3);
+    flex: 0 0 400px;
+    width: 400px;
+    min-width: 400px;
+    max-width: 400px;
     margin: 0;
     border: 1px solid var(--border-primary);
     box-sizing: border-box;
     overflow: visible;
 }
 
-/* Consistent width for all team counts in horizontal view */
-.rosters-container.horizontal-view .rosters-grid[data-team-count="2"] .roster-card,
-.rosters-container.horizontal-view .rosters-grid[data-team-count="3"] .roster-card,
-.rosters-container.horizontal-view .rosters-grid[data-team-count="4"] .roster-card,
-.rosters-container.horizontal-view .rosters-grid[data-team-count="5"] .roster-card,
-.rosters-container.horizontal-view .rosters-grid[data-team-count="6"] .roster-card,
-.rosters-container.horizontal-view .rosters-grid[data-team-count="7"] .roster-card,
-.rosters-container.horizontal-view .rosters-grid[data-team-count="8"] .roster-card,
-.rosters-container.horizontal-view .rosters-grid[data-team-count="9"] .roster-card,
-.rosters-container.horizontal-view .rosters-grid[data-team-count="10"] .roster-card,
-.rosters-container.horizontal-view .rosters-grid[data-team-count="11"] .roster-card,
-.rosters-container.horizontal-view .rosters-grid[data-team-count="12"] .roster-card {
-    flex: 0 0 calc((100% - 3rem) / 3);
-    min-width: calc((100% - 3rem) / 3);
-    max-width: calc((100% - 3rem) / 3);
-}
+/* Removed fixed width constraints - now uses flexible sizing based on viewport */
 
 .rosters-container.horizontal-view .rosters-grid {
     scrollbar-width: thin;
@@ -1317,9 +1325,10 @@ body {
     }
     
     .rosters-container.horizontal-view .roster-card {
-        flex: 0 0 calc((100% - 3rem) / 3);
-        min-width: calc((100% - 3rem) / 3);
-        max-width: calc((100% - 3rem) / 3);
+        flex: 0 0 350px;
+        width: 350px;
+        min-width: 350px;
+        max-width: 350px;
     }
 }
 @media (max-width: 768px) {
@@ -1421,9 +1430,10 @@ body {
     }
     
     .rosters-container.horizontal-view .roster-card {
-        flex: 0 0 100%;
-        min-width: 100%;
-        max-width: 100%;
+        flex: 0 0 300px;
+        width: 300px;
+        min-width: 300px;
+        max-width: 300px;
     }
 }
 @media (max-width: 480px) {
@@ -3422,9 +3432,10 @@ body {
     }
     
     .rosters-container.horizontal-view .roster-card {
-        flex: 0 0 100%;
-        min-width: 100%;
-        max-width: 100%;
+        flex: 0 0 300px;
+        width: 300px;
+        min-width: 300px;
+        max-width: 300px;
     }
 }
 @media (max-width: 480px) {

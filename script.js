@@ -90,6 +90,7 @@ function initializeHorizontalView() {
         const horizontalViewBtn = document.getElementById('horizontalViewBtn');
         
         if (rostersContainer && horizontalViewBtn) {
+            document.body.classList.add('horizontal-view-active');
             rostersContainer.classList.add('horizontal-view');
             horizontalViewBtn.classList.add('active');
             horizontalViewBtn.innerHTML = '<i class="fas fa-th"></i>';
@@ -117,6 +118,7 @@ function toggleHorizontalView() {
     const horizontalViewBtn = document.getElementById('horizontalViewBtn');
     
     if (appState.horizontalView) {
+        document.body.classList.add('horizontal-view-active');
         rostersContainer.classList.add('horizontal-view');
         horizontalViewBtn.classList.add('active');
         horizontalViewBtn.innerHTML = '<i class="fas fa-th"></i>';
@@ -124,6 +126,7 @@ function toggleHorizontalView() {
         const teamCount = allData.processedRosters.length;
         rostersContainer.setAttribute('data-team-count', `${teamCount} Teams - Use arrow keys or scroll to navigate`);
     } else {
+        document.body.classList.remove('horizontal-view-active');
         rostersContainer.classList.remove('horizontal-view');
         horizontalViewBtn.classList.remove('active');
         horizontalViewBtn.innerHTML = '<i class="fas fa-arrows-alt-h"></i>';
