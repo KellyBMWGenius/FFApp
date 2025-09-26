@@ -470,11 +470,9 @@ function organizePlayersByActualPosition(players) {
     const organized = { QB: [], RB: [], WR: [], TE: [] };
     players.forEach(player => { if (organized[player.position]) organized[player.position].push(player); });
     
-    // Sort by projected points instead of value
+    // Sort by player value instead of projected points
     Object.keys(organized).forEach(pos => {
-        organized[pos].sort((a, b) => 
-            getPlayerProjectedPoints(b, appState.projectionMode) - getPlayerProjectedPoints(a, appState.projectionMode)
-        );
+        organized[pos].sort((a, b) => (b.value || 0) - (a.value || 0));
     });
     
     console.log('organizePlayersByActualPosition: Output organized:', organized);
