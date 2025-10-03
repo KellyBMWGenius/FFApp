@@ -135,7 +135,8 @@ body {
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 1800px;
+    width: 100%;
     margin: 0 auto;
     padding: 0 1rem;
     overflow: visible;
@@ -346,51 +347,6 @@ body.horizontal-view-active .main .container {
 
 .controls-header.primary-controls .custom-select.active .select-options {
     z-index: 10007; /* Even higher for the dropdown options */
-}
-
-/* Secondary controls - less frequently used controls */
-.controls-header.secondary-controls {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-secondary);
-    padding: 10px 16px;
-    gap: 12px;
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
-    margin: 0;
-    position: relative;
-    z-index: 1; /* Lower z-index than primary controls */
-    /* Ensure secondary controls don't interfere with dropdowns */
-    pointer-events: none;
-}
-
-/* Ensure dropdowns in secondary controls have higher z-index */
-.controls-header.secondary-controls .custom-select {
-    position: relative;
-    z-index: 10003; /* Higher than secondary controls header */
-}
-
-.controls-header.secondary-controls .custom-select.active .select-options {
-    z-index: 10004; /* Even higher for the dropdown options */
-    position: absolute !important; /* Ensure absolute positioning */
-    top: 100% !important; /* Position below the trigger */
-    left: 0 !important; /* Align with left edge */
-    right: auto !important; /* Don't stretch to right edge */
-    min-width: 200px !important; /* Ensure adequate width */
-    max-height: 300px !important; /* Limit height to prevent viewport issues */
-    overflow-y: auto !important; /* Allow scrolling if needed */
-}
-
-/* Show secondary controls when expanded */
-.controls-header.secondary-controls.expanded {
-    max-height: 100px;
-    opacity: 1;
-    padding: 10px 16px;
-    margin: 0;
-    z-index: 10000; /* High enough to allow dropdowns to appear above other content */
-    pointer-events: auto; /* Re-enable pointer events when expanded */
-    overflow: visible; /* Ensure dropdowns are not clipped */
 }
 
 /* Ensure all direct children have consistent height */
@@ -958,7 +914,7 @@ body.horizontal-view-active .main .container {
 /* Column headers */
 .column-headers {
     display: grid;
-    grid-template-columns: 1fr auto auto auto auto;
+    grid-template-columns: 1fr auto auto auto auto auto;
     gap: 0.75rem;
     align-items: center;
     padding: 0.75rem;
@@ -973,8 +929,9 @@ body.horizontal-view-active .main .container {
 
 .header-player { grid-column: 1; }
 .header-position { grid-column: 2; text-align: center; }
-.header-projection { grid-column: 3; text-align: center; }
-.header-value { grid-column: 4; text-align: center; }
+.header-average { grid-column: 3; text-align: center; }
+.header-projection { grid-column: 4; text-align: center; }
+.header-value { grid-column: 5; text-align: center; }
 
 .position-subheader {
     background: var(--bg-tertiary);
@@ -989,7 +946,7 @@ body.horizontal-view-active .main .container {
 
 .player-row {
     display: grid;
-    grid-template-columns: 1fr auto auto auto auto;
+    grid-template-columns: 1fr auto auto auto auto auto;
     gap: 0.75rem;
     align-items: center;
     padding: 0.75rem;
@@ -1043,6 +1000,20 @@ body.horizontal-view-active .main .container {
 .player-projection.high { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
 .player-projection.medium { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 .player-projection.low { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+.player-average {
+    text-align: center;
+    font-weight: 600;
+    padding: 0.15rem 0.3rem;
+    border-radius: 4px;
+    min-width: 3rem;
+    font-size: 0.8rem;
+}
+
+.player-average.very-high { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.player-average.high { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.player-average.medium { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.player-average.low { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 
 .player-value {
     text-align: center;
@@ -1115,7 +1086,7 @@ body.horizontal-view-active .main .container {
 
 .roster-card[data-view-mode="positional"] .column-headers,
 .roster-card[data-view-mode="positional"] .player-row {
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
     gap: 0.75rem;
 }
 
@@ -1124,6 +1095,7 @@ body.horizontal-view-active .main .container {
     text-align: center;
 }
 
+.roster-card[data-view-mode="positional"] .player-average,
 .roster-card[data-view-mode="positional"] .player-projection,
 .roster-card[data-view-mode="positional"] .player-value {
     min-width: 4rem;
@@ -1139,6 +1111,7 @@ body.horizontal-view-active .main .container {
 .player-row.empty .player-name,
 .player-row.empty .player-details { color: var(--text-muted); }
 .player-row.empty .position-badge { background: var(--border-primary); color: var(--text-muted); }
+.player-row.empty .player-average,
 .player-row.empty .player-projection,
 .player-row.empty .player-value { color: var(--text-muted); background: var(--bg-tertiary); border: 1px solid var(--border-primary); }
 
@@ -1192,46 +1165,6 @@ body.horizontal-view-active .main .container {
 }
 .horizontal-view-btn i { font-size: 1rem; color: var(--accent-primary); transition: color 0.3s ease; }
 .horizontal-view-btn.active i { color: white; }
-
-/* Secondary controls toggle button */
-.secondary-controls-toggle {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    color: var(--text-primary);
-    padding: 0 12px;
-    height: 40px;
-    border-radius: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow);
-    min-width: 40px;
-}
-
-.secondary-controls-toggle:hover {
-    background: var(--bg-secondary);
-    border-color: var(--accent-primary);
-    transform: translateY(-1px);
-}
-
-.secondary-controls-toggle.active {
-    background: var(--accent-primary);
-    color: white;
-    border-color: var(--accent-primary);
-}
-
-.secondary-controls-toggle i { 
-    font-size: 1rem; 
-    color: var(--accent-primary); 
-    transition: color 0.3s ease, transform 0.3s ease; 
-}
-
-.secondary-controls-toggle.active i { 
-    color: white; 
-    transform: rotate(180deg);
-}
 
 /* Horizontal view styles */
 .rosters-container.horizontal-view .rosters-grid {
@@ -1291,7 +1224,7 @@ body.horizontal-view-active .main .container {
 @media (max-width: 1400px) {
     .trade-interface {
         grid-template-columns: 1fr 1fr auto;
-        max-width: 100%;
+        max-width: 1200px;
         margin: 0 1rem;
     }
     
@@ -1373,12 +1306,6 @@ body.horizontal-view-active .main .container {
         margin-top: 8px;
     }
     
-    /* Secondary controls on mobile - make them more compact */
-    .controls-header.secondary-controls {
-        padding: 12px 16px;
-        gap: 8px;
-    }
-    
     .trade-interface {
         grid-template-columns: 1fr;
         gap: 0.75rem;
@@ -1392,7 +1319,7 @@ body.horizontal-view-active .main .container {
     /* Override 2-team layout on mobile */
     .trade-interface.two-teams {
         grid-template-columns: 1fr auto; /* Keep second column for add button */
-        max-width: 100%;
+        max-width: none;
         gap: 0.75rem;
     }
     
@@ -1400,7 +1327,7 @@ body.horizontal-view-active .main .container {
     .trade-interface:has(.trade-team-column:nth-child(3):last-child),
     .trade-interface.three-teams {
         grid-template-columns: 1fr;
-        max-width: 100%;
+        max-width: none;
         gap: 0.75rem;
     }
     
@@ -1469,11 +1396,6 @@ body.horizontal-view-active .main .container {
         padding: 6px 8px;
     }
     
-    /* Secondary controls on extra small screens */
-    .controls-header.secondary-controls {
-        padding: 10px 12px;
-        gap: 6px;
-    }
 }
 
 
@@ -1523,10 +1445,10 @@ body.horizontal-view-active .main .container {
 
 .trade-interface {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 1.5rem;
     align-items: start;
-    max-width: 1800px;
+    max-width: 1600px;
     margin: 0 auto;
     width: 100%;
 }
@@ -1542,7 +1464,7 @@ body.horizontal-view-active .main .container {
 .trade-interface:has(.trade-team-column:nth-child(1):last-child) {
     grid-template-columns: 1fr auto;
     justify-content: center;
-    max-width: 1400px;
+    max-width: 1000px;
 }
 
 /* Alternative approach using CSS classes for better browser support */
@@ -1550,22 +1472,22 @@ body.horizontal-view-active .main .container {
     grid-template-columns: 1fr 1fr auto; /* Keep third column for add button */
     justify-content: center;
     max-width: 1400px;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 .trade-interface.one-team {
     grid-template-columns: 1fr auto; /* Keep second column for add button */
     justify-content: center;
-    max-width: 1400px;
+    max-width: 1000px;
 }
 
 /* When three teams are present, distribute width equally */
 .trade-interface:has(.trade-team-column:nth-child(3):last-child),
 .trade-interface.three-teams {
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 1rem;
+    gap: 1.5rem;
     justify-content: center;
-    max-width: 1800px;
+    max-width: 1600px;
 }
 
 /* Medium screen breakpoint for trade calculator */
@@ -1573,12 +1495,12 @@ body.horizontal-view-active .main .container {
     .trade-interface.three-teams {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
-        max-width: 100%;
+        max-width: none;
     }
     
     .trade-interface.three-teams .trade-team-column:last-child {
         grid-column: 1 / -1;
-        max-width: 600px;
+        max-width: none;
         margin: 0 auto;
     }
     
@@ -1588,7 +1510,7 @@ body.horizontal-view-active .main .container {
 /* Ensure the add team button is properly positioned in its column slot */
 .trade-interface .add-team-container {
     min-width: 200px;
-    max-width: 450px;
+    max-width: none;
     align-self: stretch;
 }
 
@@ -1733,9 +1655,9 @@ body.horizontal-view-active .main .container {
 
 .trade-player-row {
     display: grid;
-    grid-template-columns: auto 1fr auto auto auto;
+    grid-template-columns: auto minmax(140px, 1fr) 40px 50px 50px 55px;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.4rem;
     padding: 0.25rem;
     border-radius: 4px;
     margin-bottom: 0.1rem;
@@ -1753,6 +1675,9 @@ body.horizontal-view-active .main .container {
 .trade-player-row .player-info .player-name {
     font-size: 0.85rem;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .trade-player-row .player-info .player-details {
@@ -1763,12 +1688,18 @@ body.horizontal-view-active .main .container {
 .trade-player-row .position-badge {
     font-size: 0.75rem;
     padding: 0.15rem 0.3rem;
+    min-width: 35px;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .trade-player-row .player-projection,
 .trade-player-row .player-value {
     font-size: 0.75rem;
     padding: 0.15rem 0.3rem;
+    min-width: 50px;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .trade-player-row.involved {
@@ -1916,7 +1847,7 @@ body.horizontal-view-active .main .container {
     display: grid;
     grid-template-columns: 1fr auto auto auto auto;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
     font-size: 0.8rem;
     cursor: move;
     transition: all 0.2s ease;
@@ -1947,12 +1878,18 @@ body.horizontal-view-active .main .container {
 .receiving-player-card .position-badge {
     font-size: 0.7rem;
     padding: 0.1rem 0.25rem;
+    min-width: 30px;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .receiving-player-card .player-projection,
 .receiving-player-card .player-value {
     font-size: 0.7rem;
     padding: 0.1rem 0.25rem;
+    min-width: 45px;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .receiving-player-card .remove-player-btn {
@@ -2872,6 +2809,7 @@ body.horizontal-view-active .main .container {
     font-weight: 400;
     margin-left: 0.5rem;
     opacity: 0.8;
+    white-space: nowrap;
 }
 
 .player-projection, .player-value {
@@ -2888,6 +2826,7 @@ body.horizontal-view-active .main .container {
     flex-direction: column;
     gap: 0.15rem;
     min-width: 0;
+    overflow: hidden;
 }
 
 /* User Team Highlighting */
@@ -3155,175 +3094,12 @@ body.horizontal-view-active .main .container {
     border-bottom-color: var(--accent-primary);
 }
 
-/* Free Agents Layout */
-.free-agents-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-top: 0.5rem;
-}
-
-.free-agents-grid {
-    display: block;
-    padding: 1rem 0;
-}
-
-.free-agent-card {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 0;
-    transition: none;
-    position: relative;
-}
-
-.free-agent-card:hover {
-    transform: none;
-    box-shadow: none;
-    border-color: transparent;
-}
-
-.free-agent-card.fa {
-    border-left: none;
-}
-
-.free-agent-card.user-roster {
-    border-left: none;
-}
-
-/* Free agent player rows - match roster analyzer styling */
-.free-agents-container .player-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto auto;
-    gap: 1rem;
-    align-items: center;
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-primary);
-    background: var(--surface-primary);
-}
-
-.free-agents-container .player-row:hover {
-    background: var(--surface-secondary);
-}
-
-.free-agents-container .player-row.user-roster {
-    background: var(--accent-primary);
-    color: white;
-}
-
-.free-agents-container .player-row.free-agent {
-    background: var(--surface-primary);
-}
-
-.free-agents-container .player-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.free-agents-container .player-name {
-    font-weight: 600;
-    font-size: 1rem;
-}
-
-.free-agents-container .player-details {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
-.free-agents-container .position-badge {
-    padding: 0.25rem 0.5rem;
-    background: var(--surface-secondary);
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-align: center;
-    min-width: 2rem;
-}
-
-.free-agents-container .player-projection,
-.free-agents-container .player-value {
-    text-align: center;
-    font-weight: 600;
-    min-width: 4rem;
-}
-
-.free-agent-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-}
-
-.free-agent-name {
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: var(--text-primary);
-}
-
-.free-agent-status {
-    font-size: 0.8rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-weight: 500;
-}
-
-.free-agent-status.fa {
-    background: var(--accent-secondary);
-    color: white;
-}
-
-.free-agent-status.user-roster {
-    background: var(--accent-primary);
-    color: white;
-}
-
-.free-agent-details {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-}
-
-.free-agent-detail {
-    text-align: center;
-}
-
-.free-agent-detail-label {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.25rem;
-}
-
-.free-agent-detail-value {
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.free-agent-position {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    background: var(--surface-secondary);
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    text-align: center;
-    min-width: 2rem;
-}
-
-.free-agent-team {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    text-align: center;
-    margin-top: 0.5rem;
-}
-
 /* Medium screen breakpoint for trade calculator */
 @media (max-width: 1200px) {
     .trade-interface.three-teams {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
-        max-width: 100%;
+        max-width: none;
     }
     
     .trade-interface.three-teams .trade-team-column:last-child {
@@ -3396,7 +3172,7 @@ body.horizontal-view-active .main .container {
     /* Override 2-team layout on mobile */
     .trade-interface.two-teams {
         grid-template-columns: 1fr auto; /* Keep second column for add button */
-        max-width: 100%;
+        max-width: none;
         gap: 0.75rem;
     }
     
@@ -3404,7 +3180,7 @@ body.horizontal-view-active .main .container {
     .trade-interface:has(.trade-team-column:nth-child(3):last-child),
     .trade-interface.three-teams {
         grid-template-columns: 1fr;
-        max-width: 100%;
+        max-width: none;
         gap: 0.75rem;
     }
     
@@ -3471,9 +3247,4 @@ body.horizontal-view-active .main .container {
         padding: 6px 8px;
     }
     
-    /* Secondary controls on extra small screens */
-    .controls-header.secondary-controls {
-        padding: 10px 12px;
-        gap: 6px;
-    }
 }

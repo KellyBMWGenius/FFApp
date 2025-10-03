@@ -83,7 +83,6 @@
                 <div class="view-switcher">
                     <button id="showRosterAnalyzerBtn" class="view-tab active">Roster Analyzer</button>
                     <button id="showTradeCalculatorBtn" class="view-tab">Trade Calculator</button>
-                    <button id="showFreeAgentsBtn" class="view-tab">Free Agents</button>
                 </div>
 
                 <div class="rosters-container" id="rostersContainer">
@@ -114,6 +113,34 @@
                             </div>
 
                             <div class="control-item">
+                                <label for="valueDisplay">Value Display:</label>
+                                <div class="custom-select" id="valueDisplaySelect">
+                                    <div class="select-trigger" id="valueDisplayTrigger">
+                                        <span id="valueDisplayLabel">Raw Values</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="select-options" id="valueDisplayOptions">
+                                        <div class="select-option" data-value="raw">Raw Values</div>
+                                        <div class="select-option" data-value="normalized">Normalized (0-100)</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="control-item">
+                                <label for="optimalMethod">Optimal Roster:</label>
+                                <div class="custom-select" id="optimalMethodSelect">
+                                    <div class="select-trigger" id="optimalMethodTrigger">
+                                        <span id="optimalMethodLabel">Player Value</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="select-options" id="optimalMethodOptions">
+                                        <div class="select-option" data-value="points">Season Average</div>
+                                        <div class="select-option" data-value="value">Player Value</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="control-item">
                                 <label for="teamSortBy">Sort Teams:</label>
                                 <div class="custom-select" id="teamSortBySelect">
                                     <div class="select-trigger" id="teamSortByTrigger">
@@ -132,55 +159,6 @@
                             <button class="horizontal-view-btn" id="horizontalViewBtn" title="Toggle horizontal view for side-by-side roster comparison (Ctrl+H)">
                                 <i class="fas fa-arrows-alt-h"></i>
                             </button>
-
-                            <button class="secondary-controls-toggle" id="secondaryControlsToggle" title="Show/Hide advanced settings">
-                                <i class="fas fa-cog"></i>
-                            </button>
-                        </header>
-
-                        <header class="controls-header secondary-controls">
-                            <div class="control-item">
-                                <label for="projectionMode">Projection Mode:</label>
-                                <div class="custom-select" id="projectionModeSelect">
-                                    <div class="select-trigger" id="projectionModeTrigger">
-                                        <span id="projectionModeLabel">Average</span>
-                                        <i class="fas fa-chevron-down"></i>
-                                    </div>
-                                    <div class="select-options" id="projectionModeOptions">
-                                        <div class="select-option" data-value="week">Week 1 Projection</div>
-                                        <div class="select-option" data-value="average">Average</div>
-                                        <div class="select-option" data-value="season">Season Total</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="control-item">
-                                <label for="valueDisplay">Value Display:</label>
-                                <div class="custom-select" id="valueDisplaySelect">
-                                    <div class="select-trigger" id="valueDisplayTrigger">
-                                        <span id="valueDisplayLabel">Raw Values</span>
-                                        <i class="fas fa-chevron-down"></i>
-                                    </div>
-                                    <div class="select-options" id="valueDisplayOptions">
-                                        <div class="select-option" data-value="raw">Raw Values</div>
-                                        <div class="select-option" data-value="normalized">Normalized (0-100)</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="control-item">
-                                <label for="optimalMethod">Optimal Roster:</label>
-                                <div class="custom-select" id="optimalMethodSelect">
-                                    <div class="select-trigger" id="optimalMethodTrigger">
-                                        <span id="optimalMethodLabel">Weekly Points</span>
-                                        <i class="fas fa-chevron-down"></i>
-                                    </div>
-                                    <div class="select-options" id="optimalMethodOptions">
-                                        <div class="select-option" data-value="points">Weekly Points</div>
-                                        <div class="select-option" data-value="value">Player Value</div>
-                                    </div>
-                                </div>
-                            </div>
                         </header>
                     </div>
                     <div class="horizontal-view-help" id="horizontalViewHelp"></div>
@@ -208,30 +186,16 @@
                             <label for="tradeOptimalMethod">Optimal Roster:</label>
                             <div class="custom-select" id="tradeOptimalMethodSelect">
                                 <div class="select-trigger" id="tradeOptimalMethodTrigger">
-                                    <span id="tradeOptimalMethodLabel">Weekly Points</span>
+                                    <span id="tradeOptimalMethodLabel">Player Value</span>
                                     <i class="fas fa-chevron-down"></i>
                                 </div>
                                 <div class="select-options" id="tradeOptimalMethodOptions">
-                                    <div class="select-option" data-value="points">Weekly Points</div>
+                                    <div class="select-option" data-value="points">Season Average</div>
                                     <div class="select-option" data-value="value">Player Value</div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="control-item">
-                            <label for="tradeProjectionMode">Projection Mode:</label>
-                            <div class="custom-select" id="tradeProjectionModeSelect">
-                                <div class="select-trigger" id="tradeProjectionModeTrigger">
-                                    <span id="tradeProjectionModeLabel">Average</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="select-options" id="tradeProjectionModeOptions">
-                                    <div class="select-option" data-value="week">Week 1 Projection</div>
-                                    <div class="select-option" data-value="average">Average</div>
-                                    <div class="select-option" data-value="season">Season Total</div>
-                                </div>
-                            </div>
-                        </div>
 
                         <div class="control-item">
                             <label for="tradeValueDisplay">Value Display:</label>
@@ -251,88 +215,6 @@
                     <div class="trade-interface" id="tradeInterface">
                         </div>
                     <div class="trade-summary" id="tradeSummary" style="display: none;"></div>
-                </div>
-
-                <div class="free-agents-container" id="freeAgentsContainer" style="display: none;">
-                    <header class="controls-header">
-                        <div class="control-item">
-                            <label for="freeAgentPositionFilter">Position:</label>
-                            <div class="custom-select" id="freeAgentPositionFilter">
-                                <div class="select-trigger" id="freeAgentPositionFilterTrigger">
-                                    <span id="freeAgentPositionFilterLabel">All Positions</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="select-options" id="freeAgentPositionFilterOptions">
-                                    <div class="select-option" data-value="all">All Positions</div>
-                                    <div class="select-option" data-value="QB">QB</div>
-                                    <div class="select-option" data-value="RB">RB</div>
-                                    <div class="select-option" data-value="WR">WR</div>
-                                    <div class="select-option" data-value="TE">TE</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="control-item">
-                            <label for="freeAgentProjectionMode">Projection Mode:</label>
-                            <div class="custom-select" id="freeAgentProjectionModeSelect">
-                                <div class="select-trigger" id="freeAgentProjectionModeTrigger">
-                                    <span id="freeAgentProjectionModeLabel">Average</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="select-options" id="freeAgentProjectionModeOptions">
-                                    <div class="select-option" data-value="week">Week 1 Projection</div>
-                                    <div class="select-option" data-value="average">Average</div>
-                                    <div class="select-option" data-value="season">Season Total</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="control-item">
-                            <label for="freeAgentValueDisplay">Value Display:</label>
-                            <div class="custom-select" id="freeAgentValueDisplaySelect">
-                                <div class="select-trigger" id="freeAgentValueDisplayTrigger">
-                                    <span id="freeAgentValueDisplayLabel">Raw Values</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="select-options" id="freeAgentValueDisplayOptions">
-                                    <div class="select-option" data-value="raw">Raw Values</div>
-                                    <div class="select-option" data-value="normalized">Normalized (0-100)</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="control-item">
-                            <label for="freeAgentSortBy">Sort By:</label>
-                            <div class="custom-select" id="freeAgentSortBySelect">
-                                <div class="select-trigger" id="freeAgentSortByTrigger">
-                                    <span id="freeAgentSortByLabel">Value</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="select-options" id="freeAgentSortByOptions">
-                                    <div class="select-option" data-value="value">Value</div>
-                                    <div class="select-option" data-value="projection">Projection</div>
-                                    <div class="select-option" data-value="name">Name</div>
-                                </div>
-                            </div>
-                        </div>
-                    </header>
-
-                    <div class="free-agents-grid" id="freeAgentsGrid">
-                        <div class="loading" id="freeAgentsLoading">
-                            <div class="spinner"></div>
-                            <p>Loading free agents...</p>
-                        </div>
-                        <div class="position-section" id="freeAgentsSection" style="display: none;">
-                            <div class="position-header">AVAILABLE PLAYERS <span class="position-count">Position Count: 0</span></div>
-                            <div class="column-headers">
-                                <div class="header-player">Player</div>
-                                <div class="header-position">Position</div>
-                                <div class="header-projection">Projection</div>
-                                <div class="header-value">Value</div>
-                            </div>
-                            <div id="freeAgentsPlayers"></div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </main>

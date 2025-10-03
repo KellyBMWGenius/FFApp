@@ -43,12 +43,12 @@ def get_current_nfl_week():
 def parse_player_projections(player_stats, current_week):
     """
     Parse the raw player stats to extract the relevant projection data.
-    Based on the sample_return.txt structure, we need to extract:
+    Based on the ESPN API structure, we need to extract:
     - Week-specific projected points (from current week)
-    - Season projected average points (from week 0)
+    - Actual season average points (from week 0 avg_points)
     """
     if not player_stats:
-        return None, None
+        return None, None, None
     
     # Get current week projection - use integer key since that's what the dict has
     current_week_projection = None
@@ -64,14 +64,21 @@ def parse_player_projections(player_stats, current_week):
             if 'projected_points' in week_data:
                 current_week_projection = week_data['projected_points']
     
-    # Get season projection (from week 0) - use integer key
+    # Get season projection (from week 0) - this is still useful for comparison
     season_projection = None
     if 0 in player_stats:
         season_data = player_stats[0]
         if 'projected_avg_points' in season_data:
             season_projection = season_data['projected_avg_points']
     
-    return current_week_projection, season_projection
+    # Get ACTUAL season average (from week 0 avg_points) - this is what we really want!
+    actual_season_average = None
+    if 0 in player_stats:
+        season_data = player_stats[0]
+        if 'avg_points' in season_data:
+            actual_season_average = season_data['avg_points']
+    
+    return current_week_projection, season_projection, actual_season_average
 
 def fetch_all_free_agents():
     """
@@ -112,7 +119,7 @@ def process_players_and_save(players):
             print(f"Processing player {i+1}/{len(players)}...")
         
         # Parse the player's projection data
-        week_projection, season_projection = parse_player_projections(player.stats, current_week)
+        week_projection, season_projection, actual_season_average = parse_player_projections(player.stats, current_week)
         
         # Create the player data structure according to ideal format
         player_data = {
@@ -120,6 +127,9 @@ def process_players_and_save(players):
             "playerName": player.name,
             "season_projection": {
                 "projected_avg_points": season_projection
+            },
+            "actual_season_average": {
+                "avg_points": actual_season_average
             },
             f"week_{current_week}_projection": {
                 "projected_points": week_projection
@@ -140,11 +150,13 @@ def process_players_and_save(players):
         # Print some statistics
         players_with_week_proj = sum(1 for p in processed_players if p[f"week_{current_week}_projection"]["projected_points"] is not None)
         players_with_season_proj = sum(1 for p in processed_players if p["season_projection"]["projected_avg_points"] is not None)
+        players_with_actual_avg = sum(1 for p in processed_players if p["actual_season_average"]["avg_points"] is not None)
         
         print(f"\nData Summary:")
         print(f"Total players processed: {len(processed_players)}")
         print(f"Players with week {current_week} projections: {players_with_week_proj}")
         print(f"Players with season projections: {players_with_season_proj}")
+        print(f"Players with actual season averages: {players_with_actual_avg}")
         
     except Exception as e:
         print(f"Error saving to file: {e}")
